@@ -18,7 +18,7 @@
         @method('patch')
 
         <div class="space-y-1.5">
-            <label for="name" class="block font-semibold text-slate-700 dark:text-slate-350">Nama Lengkap <span class="text-red-500">*</span></label>
+            <label for="name" class="block font-semibold text-slate-700 dark:text-slate-300">Nama Lengkap <span class="text-red-500">*</span></label>
             <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}" required autofocus autocomplete="name" class="w-full h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
             @error('name')
                 <p class="text-[11px] text-rose-500 mt-1">{{ $message }}</p>
@@ -33,8 +33,8 @@
             @enderror
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg">
-                    <p class="text-[11px] text-amber-850 dark:text-amber-300 font-medium">
+                <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900 rounded-lg">
+                    <p class="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
                         Alamat email Anda belum diverifikasi.
                         <button form="send-verification" class="underline text-xs text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-bold ml-1 cursor-pointer">
                             Klik di sini untuk mengirim ulang email verifikasi.

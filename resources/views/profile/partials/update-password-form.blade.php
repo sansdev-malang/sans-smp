@@ -14,7 +14,7 @@
         @method('put')
 
         <div class="space-y-1.5">
-            <label for="update_password_current_password" class="block font-semibold text-slate-700 dark:text-slate-350">Kata Sandi Saat Ini</label>
+            <label for="update_password_current_password" class="block font-semibold text-slate-700 dark:text-slate-300">Kata Sandi Saat Ini</label>
             <input id="update_password_current_password" name="current_password" type="password" autocomplete="current-password" class="w-full h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
             @error('current_password', 'updatePassword')
                 <p class="text-[11px] text-rose-500 mt-1">{{ $message }}</p>
