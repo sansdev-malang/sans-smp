@@ -201,42 +201,42 @@
                 </div>
             </div>
 
-            <aside class="md:col-span-1 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-[18px] shadow-sm p-4 sm:p-5 flex flex-col justify-between">
+            <aside class="md:col-span-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[18px] shadow-sm p-4 sm:p-5 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h4 class="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-50">Keterangan</h4>
-                            <p class="text-[11px] text-slate-405 dark:text-slate-505">Panduan warna dan detail absensi</p>
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500">Panduan warna dan detail absensi</p>
                         </div>
                     </div>
 
                     <div class="mt-4 space-y-3.5">
                         <div class="flex items-start gap-3">
-                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-slate-955 dark:bg-slate-100"></span>
+                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-slate-950 dark:bg-slate-100"></span>
                             <div>
                                 <p class="text-xs font-medium text-slate-900 dark:text-slate-50">Tanggal hari ini</p>
-                                <p class="text-[11px] leading-5 text-slate-505 dark:text-slate-405">Ditandai dengan blok gelap seperti pada template.</p>
+                                <p class="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Ditandai dengan blok gelap seperti pada template.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-emerald-505"></span>
+                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                             <div>
                                 <p class="text-xs font-medium text-slate-900 dark:text-slate-50">Hadir</p>
-                                <p class="text-[11px] leading-5 text-slate-505 dark:text-slate-405">Arahkan kursor untuk melihat jam masuk dan jam pulang.</p>
+                                <p class="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Arahkan kursor untuk melihat jam masuk dan jam pulang.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-amber-505"></span>
+                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-amber-500"></span>
                             <div>
                                 <p class="text-xs font-medium text-slate-900 dark:text-slate-50">Terlambat</p>
-                                <p class="text-[11px] leading-5 text-slate-505 dark:text-slate-405">Jam masuk terlambat akan ditandai warna amber.</p>
+                                <p class="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Jam masuk terlambat akan ditandai warna amber.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-red-505"></span>
+                            <span class="mt-0.5 inline-flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
                             <div>
                                 <p class="text-xs font-medium text-slate-900 dark:text-slate-50">Minggu / Libur</p>
-                                <p class="text-[11px] leading-5 text-slate-505 dark:text-slate-405">Warna merah dipakai untuk hari Minggu atau status libur.</p>
+                                <p class="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Warna merah dipakai untuk hari Minggu atau status libur.</p>
                             </div>
                         </div>
                     </div>
@@ -244,7 +244,7 @@
 
                 <div class="mt-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-3">
                     <p class="text-[11px] font-medium text-slate-900 dark:text-slate-50">Tooltip tanggal</p>
-                    <p class="text-[11px] leading-5 text-slate-505 dark:text-slate-405 mt-1">
+                    <p class="text-[11px] leading-5 text-slate-500 dark:text-slate-400 mt-1">
                         Detail jam masuk dan jam pulang muncul saat kursor diarahkan ke tanggal.
                     </p>
                 </div>
