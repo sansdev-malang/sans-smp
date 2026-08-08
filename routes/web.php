@@ -324,3 +324,5 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/my-employee-profile', [App\Http\Controllers\MyEmployeeProfileController::class, 'edit'])->name('my-employee-profile.edit');
     Route::put('/my-employee-profile', [App\Http\Controllers\MyEmployeeProfileController::class, 'update'])->name('my-employee-profile.update');
 });
+
+
