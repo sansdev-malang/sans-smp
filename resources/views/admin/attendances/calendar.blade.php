@@ -1,6 +1,6 @@
 <x-admin-layout>
     <div class="p-6 space-y-6 w-full relative" x-data="{
-        tooltip: {
+         tooltip: {
             show: false,
             date: '',
             status: '',
@@ -8,10 +8,11 @@
             checkOut: '',
             isLate: false,
             color: '',
+            bonus: 0,
             x: 0,
             y: 0
         },
-        showTooltip(e, date, status, checkIn, checkOut, isLate, color) {
+        showTooltip(e, date, status, checkIn, checkOut, isLate, color, bonus) {
             if (!status) return;
             this.tooltip.date = date;
             this.tooltip.status = status;
@@ -19,6 +20,7 @@
             this.tooltip.checkOut = checkOut;
             this.tooltip.isLate = isLate;
             this.tooltip.color = color;
+            this.tooltip.bonus = bonus || 0;
             
             const containerRect = this.$refs.container.getBoundingClientRect();
             const targetRect = e.currentTarget.getBoundingClientRect();
@@ -91,7 +93,7 @@
 
         <!-- MINIMAL CALENDAR -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="md:col-span-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-[18px] shadow-sm w-full p-3 sm:p-4">
+            <div class="md:col-span-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[18px] shadow-sm w-full p-3 sm:p-4">
                 <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-[1fr_auto] sm:items-center pb-3 border-b border-slate-200 dark:border-slate-800">
                     <div class="sm:justify-self-center">
                         <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-50 text-left sm:text-center">{{ $startMonthName }} {{ $startYear }}</h3>
@@ -102,7 +104,7 @@
                     </form>
                 </div>
 
-                <div class="mt-3 overflow-hidden rounded-[18px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955">
+                <div class="mt-3 overflow-hidden rounded-[18px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
                     <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x lg:divide-slate-200 dark:lg:divide-slate-800">
                     @foreach($months as $monthStart)
                         @php
@@ -112,96 +114,99 @@
                         @endphp
 
                         <div class="p-3.5 sm:p-4 {{ $loop->first ? 'lg:border-r lg:border-slate-200 dark:lg:border-slate-800' : '' }}">
-                             <div class="flex items-center justify-between gap-3 mb-3.5">
-                                 <span class="text-[14px] sm:text-[16px] font-medium tracking-[-0.01em] text-slate-900 dark:text-slate-50">{{ $monthName }} {{ $monthYear }}</span>
-                             </div>
+                            <div class="flex items-center justify-between gap-3 mb-3.5">
+                                <span class="text-[14px] sm:text-[16px] font-medium tracking-[-0.01em] text-slate-900 dark:text-slate-50">{{ $monthName }} {{ $monthYear }}</span>
+                            </div>
 
-                             <div class="grid grid-cols-[repeat(7,minmax(0,1fr))] pb-1.5">
-                                 @foreach([
-                                     ['name' => 'Su', 'color' => 'text-slate-400 dark:text-slate-505'],
-                                     ['name' => 'Mo', 'color' => 'text-slate-400 dark:text-slate-505'],
-                                     ['name' => 'Tu', 'color' => 'text-slate-400 dark:text-slate-505'],
-                                     ['name' => 'We', 'color' => 'text-slate-400 dark:text-slate-505'],
-                                     ['name' => 'Th', 'color' => 'text-slate-400 dark:text-slate-505'],
-                                     ['name' => 'Fr', 'color' => 'text-slate-400 dark:text-slate-505'],
-                                     ['name' => 'Sa', 'color' => 'text-slate-400 dark:text-slate-505']
-                                 ] as $day)
-                                     <div class="text-center">
-                                         <span class="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.08em] {{ $day['color'] }}">{{ $day['name'] }}</span>
-                                     </div>
-                                 @endforeach
-                             </div>
+                            <div class="grid grid-cols-[repeat(7,minmax(0,1fr))] pb-1.5">
+                                @foreach([
+                                    ['name' => 'Su', 'color' => 'text-slate-400 dark:text-slate-500'],
+                                    ['name' => 'Mo', 'color' => 'text-slate-400 dark:text-slate-500'],
+                                    ['name' => 'Tu', 'color' => 'text-slate-400 dark:text-slate-500'],
+                                    ['name' => 'We', 'color' => 'text-slate-400 dark:text-slate-500'],
+                                    ['name' => 'Th', 'color' => 'text-slate-400 dark:text-slate-500'],
+                                    ['name' => 'Fr', 'color' => 'text-slate-400 dark:text-slate-500'],
+                                    ['name' => 'Sa', 'color' => 'text-slate-400 dark:text-slate-500']
+                                ] as $day)
+                                    <div class="text-center">
+                                        <span class="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.08em] {{ $day['color'] }}">{{ $day['name'] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
 
-                             <div class="grid grid-cols-[repeat(7,minmax(0,1fr))] gap-0">
-                                 @foreach($grid['paddingStart'] as $pDate)
-                                     <div class="min-h-[26px] sm:min-h-[34px] px-0.5 sm:px-1"></div>
-                                 @endforeach
+                            <div class="grid grid-cols-[repeat(7,minmax(0,1fr))] gap-0">
+                                @foreach($grid['paddingStart'] as $pDate)
+                                    <div class="min-h-[26px] sm:min-h-[34px] px-0.5 sm:px-1"></div>
+                                @endforeach
 
-                                 @foreach($grid['dates'] as $date)
-                                     @php
-                                         $dateStr = $date->format('Y-m-d');
-                                         $isToday = $date->isToday();
-                                         $isSunday = $date->isSunday();
-                                         $detail = $dailyDetails[$dateStr] ?? null;
+                                @foreach($grid['dates'] as $date)
+                                    @php
+                                        $dateStr = $date->format('Y-m-d');
+                                        $isToday = $date->isToday();
+                                        $isSunday = $date->isSunday();
+                                        $detail = $dailyDetails[$dateStr] ?? null;
 
-                                         $status = $detail['status'] ?? '';
-                                         $checkIn = $detail['check_in'] ?? '--:--';
-                                         $checkOut = $detail['check_out'] ?? '--:--';
-                                         $isLate = !empty($detail['is_late']);
+                                        $status = $detail['status'] ?? '';
+                                        $checkIn = $detail['check_in'] ?? '--:--';
+                                        $checkOut = $detail['check_out'] ?? '--:--';
+                                        $isLate = !empty($detail['is_late']);
 
-                                         $tooltip = $date->translatedFormat('d F Y');
-                                         if ($status === 'Hadir') {
-                                             $tooltip .= ' - Masuk: ' . $checkIn . ' - Pulang: ' . $checkOut . ($isLate ? ' - Terlambat' : '');
-                                         } elseif (!empty($status)) {
-                                             $tooltip .= ' - Status: ' . $status;
-                                         }
+                                        $tooltip = $date->translatedFormat('d F Y');
+                                        if ($status === 'Hadir') {
+                                            $tooltip .= ' - Masuk: ' . $checkIn . ' - Pulang: ' . $checkOut . ($isLate ? ' - Terlambat' : '');
+                                        } elseif (!empty($status)) {
+                                            $tooltip .= ' - Status: ' . $status;
+                                        }
 
-                                         if ($status === 'Hadir') {
-                                             $numberColor = $isLate ? 'text-amber-600' : 'text-emerald-600';
-                                             $modalColor = $isLate ? 'amber' : 'emerald';
-                                         } elseif ($status === 'Off' || $status === 'Libur' || strtolower($status) === 'x') {
-                                             $numberColor = 'text-red-500';
-                                             $modalColor = 'red';
-                                             $status = 'OFF';
-                                         } elseif ($status === 'Alfa') {
-                                             $numberColor = 'text-rose-600 dark:text-rose-400';
-                                             $modalColor = 'rose';
-                                         } elseif ($status === 'Izin') {
-                                             $numberColor = 'text-amber-600';
-                                             $modalColor = 'amber';
-                                         } elseif ($status === 'Sakit') {
-                                             $numberColor = 'text-blue-500';
-                                             $modalColor = 'blue';
-                                         } elseif ($status === 'Cuti') {
-                                             $numberColor = 'text-purple-500';
-                                             $modalColor = 'purple';
-                                         } else {
-                                             $numberColor = $isSunday ? 'text-red-500' : 'text-slate-800 dark:text-slate-100';
-                                             $modalColor = 'slate';
-                                         }
-                                     @endphp
+                                        if ($status === 'Hadir') {
+                                            $numberColor = $isLate ? 'text-amber-600' : 'text-emerald-600';
+                                            $modalColor = $isLate ? 'amber' : 'emerald';
+                                        } elseif ($status === 'Off' || $status === 'Libur' || strtolower($status) === 'x') {
+                                            $numberColor = 'text-red-500';
+                                            $modalColor = 'red';
+                                            $status = 'OFF';
+                                        } elseif ($status === 'Alfa') {
+                                            $numberColor = 'text-rose-600 dark:text-rose-400';
+                                            $modalColor = 'rose';
+                                        } elseif ($status === 'Izin') {
+                                            $numberColor = 'text-amber-600';
+                                            $modalColor = 'amber';
+                                        } elseif ($status === 'Sakit') {
+                                            $numberColor = 'text-blue-500';
+                                            $modalColor = 'blue';
+                                        } elseif ($status === 'Cuti') {
+                                            $numberColor = 'text-purple-500';
+                                            $modalColor = 'purple';
+                                        } else {
+                                            $numberColor = $isSunday ? 'text-red-500' : 'text-slate-800 dark:text-slate-100';
+                                            $modalColor = 'slate';
+                                        }
+                                    @endphp
 
-                                     <div
-                                         @mouseenter="showTooltip($event, '{{ $date->translatedFormat('d F Y') }}', '{{ $status }}', '{{ $checkIn }}', '{{ $checkOut }}', {{ $isLate ? 'true' : 'false' }}, '{{ $modalColor }}')"
-                                         @mouseleave="hideTooltip()"
-                                         class="group relative flex min-h-[26px] sm:min-h-[34px] items-center justify-center px-0.5 sm:px-1 transition-colors {{ $isToday ? 'bg-slate-950 text-white dark:bg-slate-100 dark:text-slate-900 rounded-[200px]' : 'hover:bg-slate-100 dark:hover:bg-slate-900/60' }} cursor-pointer">
-                                         <span class="text-[12px] sm:text-[13px] font-normal leading-none tracking-[0.01em] {{ $isToday ? 'text-inherit' : $numberColor }}">
-                                             {{ $date->format('d') }}
-                                         </span>
-                                     </div>
-                                 @endforeach
+                                    @php
+                                        $bonus = $detail['calculated_bonus'] ?? 0.00;
+                                    @endphp
+                                    <div
+                                        @mouseenter="showTooltip($event, '{{ $date->translatedFormat('d F Y') }}', '{{ $status }}', '{{ $checkIn }}', '{{ $checkOut }}', {{ $isLate ? 'true' : 'false' }}, '{{ $modalColor }}', {{ $bonus }})"
+                                        @mouseleave="hideTooltip()"
+                                        class="group relative flex min-h-[26px] sm:min-h-[34px] items-center justify-center px-0.5 sm:px-1 transition-colors {{ $isToday ? 'bg-slate-950 text-white dark:bg-slate-100 dark:text-slate-900 rounded-[200px]' : 'hover:bg-slate-100 dark:hover:bg-slate-900/60' }} cursor-pointer">
+                                        <span class="text-[12px] sm:text-[13px] font-normal leading-none tracking-[0.01em] {{ $isToday ? 'text-inherit' : $numberColor }}">
+                                            {{ $date->format('d') }}
+                                        </span>
+                                    </div>
+                                @endforeach
 
-                                 @foreach($grid['paddingEnd'] as $pDate)
-                                     <div class="min-h-[26px] sm:min-h-[34px] px-0.5 sm:px-1"></div>
-                                 @endforeach
-                             </div>
+                                @foreach($grid['paddingEnd'] as $pDate)
+                                    <div class="min-h-[26px] sm:min-h-[34px] px-0.5 sm:px-1"></div>
+                                @endforeach
+                            </div>
                         </div>
                     @endforeach
-                    </div>
                 </div>
             </div>
+        </div>
 
-            <aside class="md:col-span-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[18px] shadow-sm p-4 sm:p-5 flex flex-col justify-between">
+        <aside class="md:col-span-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[18px] shadow-sm p-4 sm:p-5 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
                         <div>
@@ -269,7 +274,7 @@
             
             <!-- Status Badge -->
             <div class="flex items-center justify-between gap-4 mb-2.5">
-                <span class="text-slate-400 dark:text-slate-505 font-medium">Status</span>
+                <span class="text-slate-400 dark:text-slate-500 font-medium">Status</span>
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
                       :class="{
                           'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': tooltip.color === 'emerald',
@@ -285,17 +290,24 @@
 
             <!-- Details (Check In & Check Out) -->
             <template x-if="tooltip.status === 'Hadir'">
-                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div class="flex flex-col bg-slate-50 dark:bg-slate-800/40 rounded-lg p-1.5 border border-slate-100/50 dark:border-slate-800 text-center">
-                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-0.5">Masuk</span>
-                        <span class="font-bold text-[11px]" :class="tooltip.isLate ? 'text-amber-600 dark:text-amber-500' : 'text-slate-700 dark:text-slate-200'" x-text="tooltip.checkIn"></span>
-                        <template x-if="tooltip.isLate">
-                            <span class="text-[8px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 px-1 py-0.5 rounded mt-1 mx-auto w-max leading-none">Telat</span>
-                        </template>
+                <div class="space-y-2">
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div class="flex flex-col bg-slate-50 dark:bg-slate-800/40 rounded-lg p-1.5 border border-slate-100/50 dark:border-slate-800 text-center">
+                            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Masuk</span>
+                            <span class="font-bold text-[11px]" :class="tooltip.isLate ? 'text-amber-600 dark:text-amber-500' : 'text-slate-700 dark:text-slate-200'" x-text="tooltip.checkIn"></span>
+                            <template x-if="tooltip.isLate">
+                                <span class="text-[8px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 px-1 py-0.5 rounded mt-1 mx-auto w-max leading-none">Telat</span>
+                            </template>
+                        </div>
+                        <div class="flex flex-col bg-slate-50 dark:bg-slate-800/40 rounded-lg p-1.5 border border-slate-100/50 dark:border-slate-800 text-center">
+                            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Pulang</span>
+                            <span class="font-bold text-[11px] text-slate-700 dark:text-slate-200" x-text="tooltip.checkOut"></span>
+                        </div>
                     </div>
-                    <div class="flex flex-col bg-slate-50 dark:bg-slate-800/40 rounded-lg p-1.5 border border-slate-100/50 dark:border-slate-800 text-center">
-                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-wider mb-0.5">Pulang</span>
-                        <span class="font-bold text-[11px] text-slate-700 dark:text-slate-200" x-text="tooltip.checkOut"></span>
+                    <!-- Attendance Bonus Section -->
+                    <div class="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/30 dark:border-emerald-900/30 rounded-lg px-2 py-1.5 text-[10px]">
+                        <span class="text-slate-500 dark:text-slate-400 font-medium">Bonus Kehadiran</span>
+                        <span class="font-bold text-emerald-600 dark:text-emerald-400" x-text="tooltip.bonus > 0 ? 'Rp ' + Number(tooltip.bonus).toLocaleString('id-ID') : 'Rp 0'"></span>
                     </div>
                 </div>
             </template>

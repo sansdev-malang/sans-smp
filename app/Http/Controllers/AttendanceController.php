@@ -28,8 +28,10 @@ class AttendanceController extends Controller
                 'unit_id' => strtolower($schoolUnit)
             ];
 
+            $monthCarbon = \Carbon\Carbon::createFromFormat('Y-m', $month);
+            $previousMonth = $monthCarbon->copy()->subMonthNoOverflow()->format('Y-m');
+
             if ($user && $user->role === 'employee') {
-                $monthCarbon = \Carbon\Carbon::createFromFormat('Y-m', $month);
                 $apiParams['start_date'] = $monthCarbon->copy()->startOfMonth()->format('Y-m-d');
                 $apiParams['end_date'] = $monthCarbon->copy()->endOfMonth()->format('Y-m-d');
             }
@@ -41,11 +43,54 @@ class AttendanceController extends Controller
             $startDate = \Carbon\Carbon::parse($json['start_date'] ?? date('Y-m-d'));
             $endDate = \Carbon\Carbon::parse($json['end_date'] ?? date('Y-m-d'));
 
-            // Apply Role-based filtering
+            if ($user && $user->role === 'employee' && $user->employee_id) {
+                $previousResponse = \Illuminate\Support\Facades\Http::get(rtrim($hrdUrl, '/') . '/api/attendance-matrix', [
+                    'month' => $previousMonth,
+                    'unit_id' => strtolower($schoolUnit),
+                    'start_date' => \Carbon\Carbon::createFromFormat('Y-m', $previousMonth)->startOfMonth()->format('Y-m-d'),
+                    'end_date' => \Carbon\Carbon::createFromFormat('Y-m', $previousMonth)->endOfMonth()->format('Y-m-d'),
+                ]);
+
+                $previousJson = $previousResponse->json();
+                $previousReports = collect($previousJson['data'] ?? []);
+                $previousReport = $previousReports->first(function ($item) use ($user) {
+                    return ($item['employee']['id'] ?? 0) == $user->employee_id;
+                });
+
+                $currentReport = $reports->first(function ($item) use ($user) {
+                    return ($item['employee']['id'] ?? 0) == $user->employee_id;
+                });
+
+                if ($currentReport && $previousReport) {
+                    $currentDetails = $currentReport['daily_details'] ?? [];
+                    $previousDetails = $previousReport['daily_details'] ?? [];
+                    $currentReport['daily_details'] = $previousDetails + $currentDetails;
+                    $reports = collect([$currentReport]);
+                }
+            }
+
             if ($user && $user->role === 'employee' && $user->employee_id) {
                 // If it's a regular employee, only show their own report
                 $reports = $reports->filter(function ($item) use ($user) {
                     return ($item['employee']['id'] ?? 0) == $user->employee_id;
+                });
+
+                // Load local attendances to attach calculated_bonus
+                $localAttendances = \App\Models\Attendance::where('employee_id', $user->employee_id)
+                    ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                    ->get()
+                    ->keyBy('date');
+
+                $reports = $reports->map(function ($report) use ($localAttendances) {
+                    if (isset($report['daily_details'])) {
+                        $details = $report['daily_details'];
+                        foreach ($details as $dateStr => &$detail) {
+                            $localAtt = $localAttendances->get($dateStr);
+                            $detail['calculated_bonus'] = $localAtt ? (float)$localAtt->calculated_bonus : 0.00;
+                        }
+                        $report['daily_details'] = $details;
+                    }
+                    return $report;
                 });
             } else {
                 // Filter Search
@@ -105,9 +150,9 @@ class AttendanceController extends Controller
 
         try {
             $response = \Illuminate\Support\Facades\Http::get(rtrim($hrdUrl, '/') . '/api/attendance-matrix', [
-                 'month' => $month,
-                 'unit_id' => strtolower($schoolUnit)
-             ]);
+                'month' => $month,
+                'unit_id' => strtolower($schoolUnit)
+            ]);
             $json = $response->json();
             $reportsData = $json['data'] ?? [];
             $startDate = \Carbon\Carbon::parse($json['start_date'] ?? date('Y-m-d'));
