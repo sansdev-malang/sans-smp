@@ -639,6 +639,72 @@
                 </div>
             </div>
         </template>
+
+        <!-- ADD MODAL -->
+        <template x-teleport="body">
+            <div x-show="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs text-left" style="display: none; margin-top: 0px !important; z-index: 9999;" x-transition>
+                <div @click.away="showAddModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden text-xs flex flex-col">
+                    <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-slate-500"></i>
+                            Input Izin / Cuti Baru
+                        </h3>
+                        <button @click="showAddModal = false" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer bg-transparent border-0">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <form action="{{ route('leaves.store') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-2">Pegawai</label>
+                                <select name="employee_id" required class="w-full text-xs h-9 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800 cursor-pointer">
+                                    <option value="">Pilih Pegawai</option>
+                                    @foreach($employees as $emp)
+                                        <option value="{{ $emp->id }}" {{ old('employee_id') == $emp->id ? 'selected' : '' }}>{{ $emp->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('employee_id') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-2">Jenis Izin</label>
+                                <select name="leave_type_id" required class="w-full text-xs h-9 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800 cursor-pointer">
+                                    <option value="">Pilih Jenis Izin</option>
+                                    @foreach($leaveTypes as $lt)
+                                        <option value="{{ $lt->id }}" {{ old('leave_type_id') == $lt->id ? 'selected' : '' }}>{{ $lt->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('leave_type_id') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider mb-2">Tanggal Mulai</label>
+                                    <input type="date" name="start_date" value="{{ old('start_date') }}" required class="w-full text-xs h-9 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800">
+                                    @error('start_date') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider mb-2">Tanggal Selesai</label>
+                                    <input type="date" name="end_date" value="{{ old('end_date') }}" required class="w-full text-xs h-9 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800">
+                                    @error('end_date') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider mb-2">Alasan</label>
+                                <textarea name="reason" rows="3" class="w-full text-xs p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800 resize-none" placeholder="Tulis alasan izin..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider mb-2">Berkas Lampiran</label>
+                                <input type="file" name="attachment" class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                            <button type="button" @click="showAddModal = false" class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer bg-transparent border-0">Batal</button>
+                            <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-850 rounded-lg transition-colors cursor-pointer">Simpan Izin</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </template>
     </div>
 
     <style>
