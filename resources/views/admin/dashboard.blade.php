@@ -505,7 +505,7 @@
                                     <h4 class="text-xs font-semibold {{ $announcement->category == 'penting' ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-slate-50' }}">
                                         <a href="{{ route('announcements.show', $announcement) }}" class="hover:underline">{{ $announcement->title }}</a>
                                     </h4>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ Str::limit(strip_tags($announcement->content), 100) }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ Str::limit(html_entity_decode(strip_tags(str_replace('&nbsp;', ' ', $announcement->content)), ENT_QUOTES, 'UTF-8'), 100) }}</p>
                                     <div class="flex items-center gap-2 mt-1">
                                         <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{{ $announcement->created_at->translatedFormat('d M Y, H:i') }}</span>
                                         @if($announcement->attachment)
