@@ -18,10 +18,13 @@
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @if($isAdmin)
                 <!-- Admin Card 1: Total Siswa -->
-                <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <div onclick="window.location='{{ route('siswa') }}'" class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Siswa Aktif</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Siswa Aktif</p>
+                                <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">Dev</span>
+                            </div>
                             <h3 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mt-1">
                                 <span class="stat-counter" data-target="1248">1248</span>
                             </h3>
@@ -36,7 +39,7 @@
                 </div>
 
                 <!-- Admin Card 2: Guru & Staf -->
-                <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <div onclick="window.location='{{ route('employees.index') }}'" class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Guru & Staf</p>
@@ -53,15 +56,18 @@
                         </div>
                     </div>
                     <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">98.2%</span> tingkat kehadiran
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ $employeeAttendancePercent ?? 0 }}%</span> tingkat kehadiran
                     </div>
                 </div>
 
                 <!-- Admin Card 3: Total Rombel / Kelas -->
-                <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <div onclick="window.location='{{ route('rombel') }}'" class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Rombel / Kelas</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Rombel / Kelas</p>
+                                <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-650 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">Dev</span>
+                            </div>
                             <h3 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mt-1">
                                 <span class="stat-counter" data-target="36">36</span>
                             </h3>
@@ -81,7 +87,7 @@
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Presensi Hari Ini</p>
                             <h3 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mt-1">
-                                <span class="stat-counter" data-target="96">96</span>%
+                                <span class="stat-counter" data-target="{{ $todayOverallPercent ?? 0 }}">{{ $todayOverallPercent ?? 0 }}</span>%
                             </h3>
                         </div>
                         <div class="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
@@ -89,7 +95,13 @@
                         </div>
                     </div>
                     <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">+1.2%</span> dari kemarin
+                        @if(($diffPercent ?? 0) > 0)
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">+{{ $diffPercent }}%</span> dari kemarin
+                        @elseif(($diffPercent ?? 0) < 0)
+                            <span class="text-red-600 dark:text-red-400 font-bold">{{ $diffPercent }}%</span> dari kemarin
+                        @else
+                            <span class="text-slate-500 dark:text-slate-400 font-bold">Sama seperti kemarin</span>
+                        @endif
                     </div>
                 </div>
             @else
@@ -182,8 +194,8 @@
                     <div class="flex items-center justify-between mb-4">
                         <div>
                             @if($isAdmin)
-                                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Ikhtisar Kehadiran Bulanan</h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Tingkat kehadiran siswa pada 7 bulan terakhir</p>
+                                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 font-nasalization">Tren Kehadiran Guru & Staf</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Tingkat kehadiran harian guru & staf pada periode berjalan</p>
                             @else
                                 <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 font-nasalization">Riwayat Absensi Harian</h3>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Tren waktu kedatangan (jam masuk) Anda pada bulan ini</p>
@@ -207,8 +219,8 @@
                                 .mobile-time { display: none !important; }
                             }
                         </style>
-                        <div class="mb-4 p-3.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs">
-                            <div class="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                        <div class="mb-4 p-3.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800/80 rounded-lg text-sm">
+                            <div class="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-slate-200 mb-3">
                                 <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
                                 <span>Informasi Shift Kerja Bulan Ini:</span>
                             </div>
@@ -217,7 +229,7 @@
                                 <!-- Left Column: Shift List (List Jam Kerja) -->
                                 <div class="{{ count($myActiveShifts) > 1 && !empty($myCalendarDays) ? 'md:col-span-1' : '' }} bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/50 rounded-md p-3 shadow-sm flex flex-col justify-between">
                                     <div>
-                                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Daftar Jam Kerja</p>
+                                        <p class="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Daftar Jam Kerja</p>
                                         <div class="space-y-3">
                                             @foreach($myActiveShifts as $index => $shift)
                                                 <div class="{{ $index > 0 ? 'pt-3 border-t border-slate-100 dark:border-slate-800/50' : '' }}">
@@ -237,7 +249,7 @@
                                                         <span>{{ $shift['name'] }} ({{ $code }})</span>
                                                     </div>
                                                     @if(!empty($shift['description']))
-                                                        <div class="text-[9px] text-slate-450 dark:text-slate-500 mb-1.5 leading-snug">{{ $shift['description'] }}</div>
+                                                        <div class="text-xs text-slate-455 dark:text-slate-500 mb-1.5 leading-snug">{{ $shift['description'] }}</div>
                                                     @endif
                                                     
                                                     @php
@@ -245,8 +257,8 @@
                                                         $groupedDetails = [];
                                                         foreach($shift['details'] as $dt) {
                                                             if(!$dt['is_off']) {
-                                                                $timeRange = $dt['start_time'] . ' - ' . $dt['end_time'];
-                                                                $groupedDetails[$timeRange][] = $dt['day_of_week'];
+                                                                 $timeRange = $dt['start_time'] . ' - ' . $dt['end_time'];
+                                                                 $groupedDetails[$timeRange][] = $dt['day_of_week'];
                                                             }
                                                         }
                                                     @endphp
@@ -265,8 +277,8 @@
                                                                 $daysStr = implode(', ', $dayLabels);
                                                             @endphp
                                                             <div class="flex flex-col gap-0.5 pb-1 border-b border-slate-50 dark:border-slate-800/40 last:border-0 last:pb-0">
-                                                                <span class="text-[9px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{{ $daysStr }}</span>
-                                                                <span class="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 font-mono">{{ $timeRange }}</span>
+                                                                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{{ $daysStr }}</span>
+                                                                <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">{{ $timeRange }}</span>
                                                             </div>
                                                         @endforeach
                                                     </div>
@@ -378,7 +390,27 @@
                             $minSpacing = 60;
                             $svgWidth = 500;
                             
-                            if (!$isAdmin && count($chartPoints) > 0) {
+                            if ($isAdmin && count($adminChartPoints) > 0) {
+                                $count = count($adminChartPoints);
+                                $requiredWidth = ($count - 1) * $minSpacing + 60; // 30px padding each side
+                                $svgWidth = max($minCardWidth, $requiredWidth);
+                                $spacing = ($svgWidth - 60) / max(1, $count - 1);
+                                
+                                $adminAreaD = "";
+                                $adminLineD = "";
+                                
+                                foreach($adminChartPoints as $i => &$pt) {
+                                    $pt['x'] = $i * $spacing + 30;
+                                    $prefix = $i == 0 ? "M" : "L";
+                                    $adminLineD .= "{$prefix} {$pt['x']},{$pt['y']} ";
+                                    $adminAreaD .= "L {$pt['x']},{$pt['y']} ";
+                                }
+                                unset($pt);
+                                
+                                $firstX = $adminChartPoints[0]['x'];
+                                $lastX = end($adminChartPoints)['x'];
+                                $adminAreaD = "M {$firstX},150 " . $adminAreaD . " L {$lastX},150 Z";
+                            } elseif (!$isAdmin && count($chartPoints) > 0) {
                                 $count = count($chartPoints);
                                 $requiredWidth = ($count - 1) * $minSpacing + 60; // 30px padding each side
                                 $svgWidth = max($minCardWidth, $requiredWidth);
@@ -411,46 +443,71 @@
                                     <line x1="0" y1="120" x2="{{ $svgWidth }}" y2="120" stroke="currentColor" class="text-slate-100 dark:text-slate-900" stroke-width="1" />
                                     
                                     @if($isAdmin)
-                                        <!-- Area path -->
-                                        <path d="M 0,150 L 0,110 L 80,120 L 160,85 L 240,95 L 320,60 L 400,45 L 500,30 L 500,150 Z" 
-                                              fill="url(#grad-area)" opacity="0.15"></path>
+                                        <!-- Dynamic Area path for Admin -->
+                                        @if(count($adminChartPoints) > 0)
+                                        <path d="{{ $adminAreaD }}" fill="url(#grad-area)" opacity="0.15"></path>
                                         
-                                        <!-- Animated line path -->
-                                        <path d="M 0,110 L 80,120 L 160,85 L 240,95 L 320,60 L 400,45 L 500,30" 
-                                              fill="none" stroke="currentColor" class="text-slate-800 dark:text-slate-100" stroke-width="2" stroke-linecap="round"></path>
+                                        <!-- Dynamic line path for Admin -->
+                                        <path d="{{ $adminLineD }}" fill="none" stroke="currentColor" class="text-indigo-650 dark:text-indigo-400" stroke-width="2.5" stroke-linecap="round"></path>
+                                        
+                                        <!-- Circles & Tooltips for Admin -->
+                                        @foreach($adminChartPoints as $pt)
+                                            <g class="group relative cursor-pointer outline-none" tabindex="0">
+                                                <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="3.5" class="fill-indigo-650 dark:fill-indigo-400 stroke-white dark:stroke-slate-900" stroke-width="1" />
+                                                
+                                                <text x="{{ $pt['x'] }}" y="{{ $pt['y'] - 8 }}" text-anchor="middle" class="text-[8px] sm:text-[9px] font-bold fill-slate-600 dark:fill-slate-400">
+                                                    {{ $pt['percent'] }}%
+                                                </text>
+
+                                                <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] - 10 }}" r="18" fill="transparent" class="cursor-pointer" />
+
+                                                <foreignObject x="{{ $pt['x'] - 65 }}" y="{{ $pt['y'] - 75 }}" width="130" height="65" class="pointer-events-none invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100 group-active:visible group-active:opacity-100 transition-all duration-200 overflow-visible z-50">
+                                                    <div class="bg-white/95 dark:bg-slate-955/95 text-slate-800 dark:text-white p-2 rounded-lg shadow-lg text-[9px] sm:text-[10px] leading-snug border border-slate-200 dark:border-slate-800/80 backdrop-blur-sm relative">
+                                                        <div class="font-semibold border-b border-slate-200 dark:border-slate-800/50 pb-0.5 mb-1 flex justify-between">
+                                                            <span class="text-slate-950 dark:text-white">{{ $pt['date'] }}</span>
+                                                            <span class="text-indigo-650 dark:text-indigo-400 font-bold">{{ $pt['percent'] }}% Hadir</span>
+                                                        </div>
+                                                        <div>Pegawai Hadir: <span class="font-semibold text-slate-950 dark:text-white">{{ $pt['count'] }} orang</span></div>
+                                                        <div class="text-[8px] text-slate-550 dark:text-slate-400 mt-0.5">Basis data kepegawaian SANS SMP</div>
+                                                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white dark:bg-slate-955 border-r border-b border-slate-200 dark:border-slate-800/80 rotate-45"></div>
+                                                    </div>
+                                                </foreignObject>
+                                            </g>
+                                        @endforeach
+                                        @endif
                                     @else
                                         <!-- Dynamic Area path -->
                                         @if(count($chartPoints) > 0)
                                         <path d="{{ $areaD }}" fill="url(#grad-area)" opacity="0.15"></path>
                                         
                                         <!-- Dynamic line path -->
-                                        <path d="{{ $lineD }}" fill="none" stroke="currentColor" class="text-indigo-600 dark:text-indigo-400" stroke-width="2.5" stroke-linecap="round"></path>
+                                        <path d="{{ $lineD }}" fill="none" stroke="currentColor" class="text-indigo-655 dark:text-indigo-400" stroke-width="2.5" stroke-linecap="round"></path>
                                         
                                         <!-- Circles & Text Labels on Points -->
                                         @foreach($chartPoints as $pt)
                                             <g class="group relative cursor-pointer outline-none" tabindex="0">
                                                 <!-- Point Circle -->
-                                                <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="3.5" class="fill-indigo-600 dark:fill-indigo-400 stroke-white dark:stroke-slate-900" style="{{ !empty($pt['is_late']) ? 'fill: #f59e0b;' : '' }}" stroke-width="1" />
+                                                <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="3.5" class="fill-indigo-655 dark:fill-indigo-400 stroke-white dark:stroke-slate-900" style="{{ !empty($pt['is_late']) ? 'fill: #f59e0b;' : '' }}" stroke-width="1" />
                                                 
                                                 <!-- Time Text -->
-                                                <text x="{{ $pt['x'] }}" y="{{ $pt['y'] - 8 }}" text-anchor="middle" class="text-[8px] sm:text-[9px] font-bold fill-slate-600 dark:fill-slate-300" style="{{ !empty($pt['is_late']) ? 'fill: #f59e0b;' : '' }}">
+                                                <text x="{{ $pt['x'] }}" y="{{ $pt['y'] - 8 }}" text-anchor="middle" class="text-[8px] sm:text-[9px] font-bold fill-slate-655 dark:fill-slate-300" style="{{ !empty($pt['is_late']) ? 'fill: #f59e0b;' : '' }}">
                                                     {{ $pt['time'] }}
                                                 </text>
 
-                                                <!-- Invisible interactive area for hover/touch (makes it easy to tap on mobile!) -->
+                                                <!-- Invisible interactive area for hover/touch -->
                                                 <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] - 10 }}" r="18" fill="transparent" class="cursor-pointer" />
 
                                                 <!-- Styled Tooltip using foreignObject -->
                                                 <foreignObject x="{{ $pt['x'] - 65 }}" y="{{ $pt['y'] - 75 }}" width="130" height="65" class="pointer-events-none invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100 group-active:visible group-active:opacity-100 transition-all duration-200 overflow-visible z-50">
-                                                    <div class="bg-white/95 dark:bg-slate-950/95 text-slate-800 dark:text-white p-2 rounded-lg shadow-lg text-[9px] sm:text-[10px] leading-snug border border-slate-200 dark:border-slate-800/80 backdrop-blur-sm relative">
+                                                    <div class="bg-white/95 dark:bg-slate-955/95 text-slate-800 dark:text-white p-2 rounded-lg shadow-lg text-[9px] sm:text-[10px] leading-snug border border-slate-200 dark:border-slate-800/80 backdrop-blur-sm relative">
                                                         <div class="font-semibold border-b border-slate-200 dark:border-slate-800/50 pb-0.5 mb-1 flex justify-between">
                                                             <span class="text-slate-950 dark:text-white">{{ $pt['date'] }}</span>
                                                             <span class="{{ !empty($pt['is_late']) ? 'text-amber-500 dark:text-amber-400 font-bold' : 'text-emerald-600 dark:text-emerald-455 font-bold' }}">{{ $pt['status'] }}</span>
                                                         </div>
                                                         <div>Jam Masuk: <span class="font-semibold text-slate-950 dark:text-white">{{ $pt['check_in'] !== '-' ? $pt['check_in'] : 'Belum absen' }}</span></div>
-                                                        <div class="text-[8px] text-slate-500 dark:text-slate-400 mt-0.5">Jadwal: {{ $pt['shift_start'] ? $pt['shift_start'] . ' - ' . ($pt['shift_end'] ?? 'Selesai') : 'Libur/Off' }}</div>
+                                                        <div class="text-[8px] text-slate-550 dark:text-slate-400 mt-0.5">Jadwal: {{ $pt['shift_start'] ? $pt['shift_start'] . ' - ' . ($pt['shift_end'] ?? 'Selesai') : 'Libur/Off' }}</div>
                                                         <!-- Tooltip Arrow -->
-                                                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white dark:bg-slate-950 border-r border-b border-slate-200 dark:border-slate-800/80 rotate-45"></div>
+                                                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white dark:bg-slate-955 border-r border-b border-slate-200 dark:border-slate-800/80 rotate-45"></div>
                                                     </div>
                                                 </foreignObject>
                                             </g>
@@ -461,8 +518,8 @@
                                     <!-- Gradients defs -->
                                     <defs>
                                         <linearGradient id="grad-area" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stop-color="currentColor" class="text-indigo-600 dark:text-indigo-400" />
-                                            <stop offset="100%" stop-color="currentColor" class="text-indigo-600 dark:text-indigo-400" stop-opacity="0" />
+                                            <stop offset="0%" stop-color="currentColor" class="text-indigo-650 dark:text-indigo-400" />
+                                            <stop offset="100%" stop-color="currentColor" class="text-indigo-650 dark:text-indigo-400" stop-opacity="0" />
                                         </linearGradient>
                                     </defs>
                                 </svg>
@@ -471,13 +528,9 @@
                             <!-- Chart Labels -->
                             <div class="flex justify-between text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase mt-4 w-full px-[15px]">
                                 @if($isAdmin)
-                                    <span class="w-[30px] text-center">Jan</span>
-                                    <span class="w-[30px] text-center">Feb</span>
-                                    <span class="w-[30px] text-center">Mar</span>
-                                    <span class="w-[30px] text-center">Apr</span>
-                                    <span class="w-[30px] text-center">Mei</span>
-                                    <span class="w-[30px] text-center">Jun</span>
-                                    <span class="w-[30px] text-center">Jul</span>
+                                    @foreach($adminChartPoints as $pt)
+                                         <span class="w-[30px] text-center">{{ $pt['short_date'] }}</span>
+                                    @endforeach
                                 @else
                                     @foreach($chartPoints as $pt)
                                         <span class="w-[30px] text-center">{{ $pt['short_date'] }}</span>
@@ -487,8 +540,9 @@
                         </div>
                     </div>
                 </div>
-                </div>
-                <!-- Announcements / Information System -->
+            </div>
+            
+            <!-- Announcements / Information System -->
             <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 flex flex-col justify-between shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
                 <div>
                     <div class="flex items-center justify-between mb-4">
@@ -536,25 +590,29 @@
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4">Aksi Cepat</h3>
                 <div class="grid grid-cols-2 gap-2">
                     @if($isAdmin)
-                        <button onclick="window.location='{{ route('coming-soon') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
+                        <button onclick="window.location='{{ route('siswa') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
                             <i data-lucide="user-plus" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Tambah Siswa</span>
+                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Tambah Siswa</span>
                         </button>
-                        <button onclick="window.location='{{ route('coming-soon') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
+                        <button onclick="window.location='{{ route('employees.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
+                            <i data-lucide="users" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
+                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Data Pegawai</span>
+                        </button>
+                        <button onclick="window.location='{{ route('leaves.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
+                            <i data-lucide="file-check-2" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
+                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Verifikasi Cuti</span>
+                        </button>
+                        <button onclick="window.location='{{ route('absensi_laporan') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
                             <i data-lucide="clipboard-list" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Input Nilai</span>
+                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Laporan Presensi</span>
                         </button>
-                        <button onclick="window.location='{{ route('coming-soon') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="send" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Kirim Pesan</span>
-                        </button>
-                        <button onclick="window.location='{{ route('coming-soon') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="receipt" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Cek SPP</span>
+                        <button onclick="window.location='{{ route('absensi_hari_ini') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
+                            <i data-lucide="history" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
+                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Riwayat Presensi</span>
                         </button>
                     @else
                         <button onclick="window.location='{{ route('my-leaves.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform"></i>
+                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-650 dark:text-indigo-400 group-hover:scale-105 transition-transform"></i>
                             <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Ajukan Cuti/Izin</span>
                         </button>
                         <button onclick="window.location='{{ route('attendances.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
@@ -577,51 +635,37 @@
             <div class="animate-card lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
                 @if($isAdmin)
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4">Log Aktivitas Terbaru</h3>
-                     <div class="space-y-3.5">
-                        <div class="flex items-start justify-between gap-3 py-1 border-b border-slate-50 dark:border-slate-900/60 pb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                    <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                     <div class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin">
+                        @forelse($activityLogs as $log)
+                            <div class="flex items-start justify-between gap-3 py-1 border-b border-slate-50 dark:border-slate-900/60 pb-3 last:border-b-0 last:pb-0">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-7 h-7 rounded-lg {{ $log['icon_color'] }} flex items-center justify-center shrink-0">
+                                        <i data-lucide="{{ $log['icon'] }}" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $log['title'] }}</p>
+                                        <p class="text-[10px] text-slate-550 mt-0.5 leading-snug break-words pr-2">{{ $log['description'] }}</p>
+                                        <!-- Time on mobile -->
+                                        <span class="mobile-time text-[9px] text-slate-400 dark:text-slate-500 font-medium block mt-1">{{ $log['time']->diffForHumans() }}</span>
+                                    </div>
                                 </div>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">Login Wali Kelas XI-IPA</p>
-                                    <p class="text-xs text-slate-500">Guru: Drs. Eko Prasetyo</p>
-                                </div>
+                                <!-- Time on desktop -->
+                                <span class="desktop-time text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">{{ $log['time']->diffForHumans() }}</span>
                             </div>
-                            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">10 mnt yang lalu</span>
-                        </div>
-                        <div class="flex items-start justify-between gap-3 py-1 border-b border-slate-50 dark:border-slate-900/60 pb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                    <i data-lucide="file-plus" class="w-3.5 h-3.5"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">Unggah Materi Fisika Kuantum</p>
-                                    <p class="text-xs text-slate-500">Kelas: XII-IPA</p>
-                                </div>
+                        @empty
+                            <div class="text-xs text-slate-550 text-center py-6">
+                                <i data-lucide="activity" class="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2"></i>
+                                Belum ada aktivitas terbaru hari ini.
                             </div>
-                            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">24 mnt yang lalu</span>
-                        </div>
-                        <div class="flex items-start justify-between gap-3 py-1">
-                            <div class="flex items-center gap-3">
-                                <div class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">Verifikasi Berkas Pendaftaran</p>
-                                    <p class="text-xs text-slate-500">Gelombang 2 SANS Malang</p>
-                                </div>
-                            </div>
-                            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">45 mnt yang lalu</span>
-                        </div>
+                        @endforelse
                     </div>
                 @else
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4 font-nasalization">Aktivitas Saya (Pengajuan Terakhir)</h3>
-                     <div class="space-y-3.5">
+                     <div class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin">
                         @forelse($myRecentLeaves as $leave)
                             <div class="flex items-start justify-between gap-3 py-1 border-b border-slate-50 dark:border-slate-900/60 pb-3">
                                 <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400 shrink-0">
+                                    <div class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-655 dark:text-slate-400 shrink-0">
                                         <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
                                     </div>
                                     <div class="min-w-0">
@@ -634,7 +678,7 @@
                                 <span class="desktop-time text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">{{ $leave->created_at->translatedFormat('d M Y, H:i') }}</span>
                             </div>
                         @empty
-                            <div class="text-xs text-slate-500 text-center py-4">Belum ada riwayat aktivitas pengajuan cuti/izin.</div>
+                            <div class="text-xs text-slate-550 text-center py-4">Belum ada riwayat aktivitas pengajuan cuti/izin.</div>
                         @endforelse
                     </div>
                 @endif
