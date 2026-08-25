@@ -11,19 +11,9 @@ class DashboardController extends Controller
         $user = auth()->user();
         $isAdmin = in_array($user->role, ['super_admin', 'admin_sd', 'admin_paud', 'admin_smp', 'kepala_sekolah', 'waka']);
 
-        $tukangIds = \App\Models\Employee::where(function($q) {
-            $q->whereHas('employeeType', function($subQ) {
-                $subQ->where('code', 'tukang')->orWhere('name', 'like', '%tukang%');
-            })->orWhere('position', 'like', '%tukang%');
-        })->pluck('id')->toArray();
-
-        $employeeCount = \App\Models\Employee::whereNotIn('id', $tukangIds)->where(function($q) {
-            $q->whereNotIn('position', ['GPK', 'GPQ'])
-              ->orWhereNull('position');
-        })->count();
-
-        $gpkCount = \App\Models\Employee::whereNotIn('id', $tukangIds)->where('position', 'GPK')->count();
-        $gpqCount = \App\Models\Employee::whereNotIn('id', $tukangIds)->where('position', 'GPQ')->count();
+        $employeeCount = \App\Models\Employee::count();
+        $gpkCount = 0;
+        $gpqCount = 0;
 
         $today = now()->toDateString();
         $yesterday = now()->subDay()->toDateString();
@@ -48,25 +38,12 @@ class DashboardController extends Controller
             $reports = $response->json()['data'] ?? [];
             
             foreach ($reports as $report) {
-                $empId = $report['employee']['id'] ?? null;
-                if (in_array($empId, $tukangIds)) {
-                    continue;
-                }
-
-                $pos = $report['employee']['position'] ?? $report['employee']['subject_position'] ?? null;
                 $details = $report['daily_details'] ?? [];
                 
                 // Cek hari ini
                 if (($details[$today]['status'] ?? '') === 'Hadir') {
                     $totalPresentToday++;
-                    
-                    if ($pos === 'GPK') {
-                        $gpkPresent++;
-                    } elseif ($pos === 'GPQ') {
-                        $gpqPresent++;
-                    } else {
-                        $employeePresent++;
-                    }
+                    $employeePresent++;
                 }
                 
                 // Cek kemarin
@@ -79,10 +56,10 @@ class DashboardController extends Controller
         }
 
         $employeeAttendancePercent = $employeeCount > 0 ? round(($employeePresent / $employeeCount) * 100, 1) : 0;
-        $gpkAttendancePercent = $gpkCount > 0 ? round(($gpkPresent / $gpkCount) * 100, 1) : 0;
-        $gpqAttendancePercent = $gpqCount > 0 ? round(($gpqPresent / $gpqCount) * 100, 1) : 0;
+        $gpkAttendancePercent = 0;
+        $gpqAttendancePercent = 0;
 
-        $totalEmployeeCount = \App\Models\Employee::whereNotIn('id', $tukangIds)->count();
+        $totalEmployeeCount = $employeeCount;
         $todayOverallPercent = $totalEmployeeCount > 0 ? round(($totalPresentToday / $totalEmployeeCount) * 100, 1) : 0;
         $yesterdayOverallPercent = $totalEmployeeCount > 0 ? round(($totalPresentYesterday / $totalEmployeeCount) * 100, 1) : 0;
         
@@ -134,14 +111,13 @@ class DashboardController extends Controller
             }
 
             $attendanceCounts = \App\Models\Attendance::whereIn('date', $dates)
-                ->whereNotIn('employee_id', $tukangIds)
                 ->where('status', 'Hadir')
                 ->selectRaw('date, count(*) as total')
                 ->groupBy('date')
                 ->pluck('total', 'date')
                 ->toArray();
 
-            $totalActiveEmployees = \App\Models\Employee::whereNotIn('id', $tukangIds)->count();
+            $totalActiveEmployees = \App\Models\Employee::count();
             if ($totalActiveEmployees <= 0) {
                 $totalActiveEmployees = 1;
             }

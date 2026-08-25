@@ -38,11 +38,11 @@
                     </div>
                 </div>
 
-                <!-- Admin Card 2: Guru & Staf -->
+                <!-- Admin Card 2: Pegawai -->
                 <div onclick="window.location='{{ route('employees.index') }}'" class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Guru & Staf</p>
+                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pegawai</p>
                             <h3 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mt-1">
                                 @if(isset($employeeCount))
                                     <span class="stat-counter" data-target="{{ $employeeCount }}">{{ $employeeCount }}</span>
