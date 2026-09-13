@@ -13,10 +13,20 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         $isAdmin = in_array($user->role, ['super_admin', 'admin_sd', 'admin_paud', 'admin_smp', 'kepala_sekolah', 'waka']);
+        $schoolUnitId = config('app.school_unit_id', 3);
 
-        $employeeCount = \App\Models\Employee::count();
-        $studentCount = \App\Models\Student::where('status', 'active')->count() ?: \App\Models\Student::count();
-        $classroomCount = \App\Models\Classroom::count();
+        // Smart Caching for Master Counts (5 minutes TTL)
+        $masterCounts = Cache::remember('dashboard_master_counts_' . $schoolUnitId, 300, function () {
+            return [
+                'employeeCount' => \App\Models\Employee::count(),
+                'studentCount' => \App\Models\Student::where('status', 'active')->count() ?: \App\Models\Student::count(),
+                'classroomCount' => \App\Models\Classroom::count(),
+            ];
+        });
+
+        $employeeCount = $masterCounts['employeeCount'];
+        $studentCount = $masterCounts['studentCount'];
+        $classroomCount = $masterCounts['classroomCount'];
         $gpkCount = 0;
         $gpqCount = 0;
 
@@ -29,13 +39,13 @@ class DashboardController extends Controller
         $totalPresentToday = 0;
         $totalPresentYesterday = 0;
 
-        $schoolUnitId = config('app.school_unit_id', 3);
         $hrdUrl = \App\Models\Setting::get('hrd_api_url', config('app.hrd_url', 'http://sans-hrd.test'));
         $cacheKey = 'hrd_matrix_unit_' . $schoolUnitId . '_' . $today;
 
-        $reports = Cache::remember($cacheKey, 60, function () use ($hrdUrl, $schoolUnitId, $yesterday, $today) {
+        // Smart Caching with Fast 1.5s Timeout and Stale Cache Fallback
+        $reports = Cache::remember($cacheKey, 300, function () use ($hrdUrl, $schoolUnitId, $yesterday, $today, $cacheKey) {
             try {
-                $response = Http::timeout(3)->withHeaders([
+                $response = Http::timeout(1.5)->withHeaders([
                     'X-API-TOKEN' => config('app.hrd_api_token')
                 ])->get(rtrim($hrdUrl, '/') . '/api/attendance-matrix', [
                     'school_unit_id' => $schoolUnitId,
@@ -44,11 +54,16 @@ class DashboardController extends Controller
                     'end_date' => $today
                 ]);
 
-                return $response->successful() ? ($response->json()['data'] ?? []) : [];
+                if ($response->successful()) {
+                    $data = $response->json()['data'] ?? [];
+                    Cache::put($cacheKey . '_stale', $data, 86400); // 24h stale backup
+                    return $data;
+                }
             } catch (\Exception $e) {
                 Log::warning('Gagal memuat absensi dashboard dari HRD: ' . $e->getMessage());
-                return [];
             }
+
+            return Cache::get($cacheKey . '_stale', []);
         });
 
         foreach ($reports as $report) {
@@ -93,7 +108,7 @@ class DashboardController extends Controller
 
         $latestAnnouncements = $query->take(3)->get();
 
-        // Prepare Admin Attendance Chart Points
+        // Prepare Admin Attendance Chart Points (Now indexed on date & status)
         $adminChartPoints = [];
 
         if ($isAdmin) {
@@ -204,18 +219,23 @@ class DashboardController extends Controller
                     $month = $todayDate->day > $cutoffDate ? $todayDate->copy()->startOfMonth()->addMonth()->format('Y-m') : $todayDate->format('Y-m');
                     $bonusCacheKey = 'hrd_bonus_report_' . $schoolUnitId . '_' . $month;
 
-                    $reports = Cache::remember($bonusCacheKey, 120, function () use ($hrdUrl, $schoolUnitId, $month) {
+                    $reports = Cache::remember($bonusCacheKey, 300, function () use ($hrdUrl, $schoolUnitId, $month, $bonusCacheKey) {
                         try {
-                            $response = Http::timeout(3)->withHeaders([
+                            $response = Http::timeout(1.5)->withHeaders([
                                 'X-API-TOKEN' => config('app.hrd_api_token')
                             ])->get(rtrim($hrdUrl, '/') . '/api/bonus-reports', [
                                 'school_unit_id' => $schoolUnitId,
                                 'month' => $month
                             ]);
-                            return $response->successful() ? ($response->json()['data'] ?? []) : [];
+                            if ($response->successful()) {
+                                $data = $response->json()['data'] ?? [];
+                                Cache::put($bonusCacheKey . '_stale', $data, 86400);
+                                return $data;
+                            }
                         } catch (\Exception $e) {
-                            return [];
+                            // Fallback to stale
                         }
+                        return Cache::get($bonusCacheKey . '_stale', []);
                     });
 
                     $reportsCol = collect($reports);
@@ -369,7 +389,12 @@ class DashboardController extends Controller
         $activityLogs = collect();
         if ($isAdmin) {
             // 1. Fetch Leave Requests
-            $leaves = \App\Models\LeaveRequest::with(['employee', 'leaveType'])->latest()->take(10)->get();
+            $leaves = \App\Models\LeaveRequest::with(['employee:id,name', 'leaveType:id,name'])
+                ->select('id', 'employee_id', 'leave_type_id', 'status', 'reason', 'created_at')
+                ->latest()
+                ->take(10)
+                ->get();
+
             foreach ($leaves as $leave) {
                 $statusText = 'mengajukan cuti/izin';
                 if ($leave->status === 'Approved') {
@@ -389,7 +414,12 @@ class DashboardController extends Controller
             }
 
             // 2. Fetch Attendances (Check-in/Check-out)
-            $attendances = \App\Models\Attendance::with('employee')->latest()->take(15)->get();
+            $attendances = \App\Models\Attendance::with('employee:id,name')
+                ->select('id', 'employee_id', 'date', 'clock_in', 'clock_out')
+                ->latest()
+                ->take(15)
+                ->get();
+
             foreach ($attendances as $att) {
                 if ($att->clock_in) {
                     $activityLogs->push([
@@ -414,7 +444,12 @@ class DashboardController extends Controller
             }
 
             // 3. Fetch Employee Updates / Creations
-            $newEmployees = \App\Models\Employee::with('employeeType')->latest()->take(10)->get();
+            $newEmployees = \App\Models\Employee::with('employeeType:id,name')
+                ->select('id', 'name', 'position', 'employee_type_id', 'created_at', 'updated_at')
+                ->latest()
+                ->take(10)
+                ->get();
+
             foreach ($newEmployees as $emp) {
                 $isUpdate = $emp->updated_at->gt($emp->created_at->addMinutes(5));
                 $activityLogs->push([
@@ -427,7 +462,6 @@ class DashboardController extends Controller
                 ]);
             }
 
-            // Sort all activities by time descending and take top 10
             $activityLogs = $activityLogs->sortByDesc('time')->take(10)->values();
         }
 
