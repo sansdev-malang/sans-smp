@@ -327,7 +327,7 @@
         </section>
 
         <!-- MODAL ENROLLMENT / MASUKKAN KE SISWA AKTIF -->
-        <div x-show="enrollModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+        <div x-show="enrollModalOpen" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="display: none; margin-top: 0px !important; z-index: 9999; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
             <div @click.outside="enrollModalOpen = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col">
                 
                 <form @submit.prevent="submitEnroll">
@@ -405,7 +405,7 @@
         </div>
 
         <!-- MODAL DETAIL PENDAFTAR SPMB -->
-        <div x-show="detailModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+        <div x-show="detailModalOpen" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="display: none; margin-top: 0px !important; z-index: 9999; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
             <div @click.outside="detailModalOpen = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col">
                 <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-sm z-10">
                     <h3 class="text-base font-bold text-slate-900 dark:text-slate-50">Detail Calon Siswa SPMB</h3>

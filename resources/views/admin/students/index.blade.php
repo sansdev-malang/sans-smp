@@ -342,7 +342,7 @@
         </section>
 
         <!-- MODAL IMPOR EXCEL SISWA -->
-        <div x-show="importModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+        <div x-show="importModalOpen" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="display: none; margin-top: 0px !important; z-index: 9999; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
             <div @click.outside="importModalOpen = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col">
                 
                 <form @submit.prevent="submitImport">
@@ -408,7 +408,7 @@
         </div>
 
         <!-- MODAL TAMBAH / EDIT SISWA -->
-        <div x-show="formModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+        <div x-show="formModalOpen" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="display: none; margin-top: 0px !important; z-index: 9999; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
             <div @click.outside="formModalOpen = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
                 
                 <form @submit.prevent="submitStudentForm">
@@ -559,7 +559,7 @@
         </div>
 
         <!-- MODAL DETAIL SISWA -->
-        <div x-show="detailModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+        <div x-show="detailModalOpen" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="display: none; margin-top: 0px !important; z-index: 9999; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
             <div @click.outside="detailModalOpen = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col">
                 <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">
                     <h3 class="text-base font-bold text-slate-900 dark:text-slate-50">Biodata Siswa</h3>
