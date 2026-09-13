@@ -56,13 +56,12 @@
             </a>
         </div>
 
-        <!-- Group 1: Platform -->
+        <!-- Group 1: Layanan Pegawai (Personal Guru & Pegawai) -->
         <div>
-            <h3
-                class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Platform</h3>
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Layanan Pegawai
+            </h3>
             <nav class="space-y-1">
-
                 @if(auth()->user()->employee_id)
                 <a href="{{ route('my-employee-profile.edit') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('my-employee-profile.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
                     <i data-lucide="user" class="menu-icon w-4 h-4"></i>
@@ -72,183 +71,7 @@
                     </span>
                 </a>
                 @endif
-                @if($isAdmin)
-                <a href="{{ route('students.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
-                    {{ Request::routeIs('students.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
-                    text-xs relative group">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="users" class="menu-icon w-4 h-4"></i>
-                        <span class="menu-text">Data Siswa</span>
-                    </div>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Data Siswa
-                    </span>
-                </a>
-                <a href="{{ route('spmb.candidates.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg
-                    {{ Request::routeIs('spmb.candidates.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
-                    text-xs relative group">
-                    <i data-lucide="user-plus" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
-                    <span class="menu-text">Siswa Baru SPMB</span>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Siswa Baru SPMB
-                    </span>
-                </a>
 
-                <a href="{{ route('teachers.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg
-                    {{ Request::routeIs('teachers.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
-                    text-xs relative group">
-                    <i data-lucide="graduation-cap" class="menu-icon w-4 h-4"></i>
-                    <span class="menu-text">Data Guru</span>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Data Guru
-                    </span>
-                </a>
-                @endif
-                @if($isAdmin)
-                <a href="{{ route('classrooms.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
-                    {{ Request::routeIs('classrooms.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
-                    text-xs font-medium relative group">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="university" class="menu-icon w-4 h-4"></i>
-                        <span class="menu-text">Rombongan Belajar</span>
-                    </div>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Rombongan Belajar
-                    </span>
-                </a>
-
-                <a href="{{ route('class-levels.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
-                    {{ Request::routeIs('class-levels.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
-                    text-xs font-medium relative group">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="layers" class="menu-icon w-4 h-4"></i>
-                        <span class="menu-text">Tingkat Kelas</span>
-                    </div>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Tingkat Kelas
-                    </span>
-                </a>
-
-                <a href="{{ route('academic-years.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
-                    {{ Request::routeIs('academic-years.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
-                    text-xs font-medium relative group">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="calendar-range" class="menu-icon w-4 h-4"></i>
-                        <span class="menu-text">Tahun Ajaran</span>
-                    </div>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Tahun Ajaran
-                    </span>
-                </a>
-                @endif
-            </nav>
-        </div>
-
-        @if($isAdmin)
-        <!-- Group 2: Homebase (Dropdown style) -->
-        <div>
-            <h3
-                class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Homebase</h3>
-            <nav class="space-y-1"></nav>
-            <a href="{{ route('coming-soon') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
-                    {{ Request::routeIs('coming-soon') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
-                    text-xs font-medium relative group">
-                <div class="flex items-center gap-3">
-                    <i data-lucide="podium" class="menu-icon w-4 h-4"></i>
-                    <span class="menu-text">Leaderboard</span>
-                </div>
-                <span class="menu-text text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                <span
-                    class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                    Leaderboard
-                </span>
-            </a>
-            <div x-data="{ open1: false, open2: false }">
-                <button @click="open1 = !open1"
-                    class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="database" class="menu-icon w-4 h-4"></i>
-                        <span class="menu-text">Database</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 transition-transform duration-200"
-                        :style="open1 ? 'transform: rotate(90deg);' : ''"></i>
-                </button>
-
-                <!-- Dropdown content with line connector -->
-                <div x-show="open1" x-collapse
-                    class="mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1"
-                    style="margin-left:20px">
-                    <a href="{{ route('coming-soon') }}"
-                        class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-3 h-3 text-red-600"></i>
-                            <span>Homebase Merah</span>
-                        </div>
-                        <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                    </a>
-                    <a href="{{ route('coming-soon') }}"
-                        class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-3 h-3 text-yellow-600"></i>
-                            <span>Homebase Kuning</span>
-                        </div>
-                        <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                    </a>
-                    <a href="{{ route('coming-soon') }}"
-                        class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-3 h-3 text-green-600"></i>
-                            <span>Homebase Hijau</span>
-                        </div>
-                        <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                    </a>
-                    <a href="{{ route('coming-soon') }}"
-                        class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-3 h-3 text-blue-600"></i>
-                            <span>Homebase Biru</span>
-                        </div>
-                        <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                    </a>
-                    <a href="{{ route('coming-soon') }}"
-                        class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-3 h-3 text-indigo-600"></i>
-                            <span>Homebase Ungu</span>
-                        </div>
-                        <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                    </a>
-                </div>
-                <a href="{{ route('coming-soon') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
-                    {{ Request::routeIs('coming-soon') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
-                    text-xs font-medium relative group">
-                <div class="flex items-center gap-3">
-                    <i data-lucide="star-check" class="menu-icon w-4 h-4"></i>
-                    <span class="menu-text">Input Poin</span>
-                </div>
-                <span class="menu-text text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                <span
-                    class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                    Input Poin
-                </span>
-            </a>
-            </div>
-        </div>
-        @endif
-
-                        <!-- Group: Layanan Pegawai -->
-        <div>
-            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 mt-4">
-                Layanan Pegawai
-            </h3>
-            <nav class="space-y-1 mb-2">
                 <a href="{{ route('attendances.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('attendances.index') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
                     <i data-lucide="scan-face" class="menu-icon w-4 h-4"></i>
                     <span class="menu-text">Data Absensi</span>
@@ -256,16 +79,7 @@
                         Data Absensi
                     </span>
                 </a>
-                @if($isAdmin)
-                <a href="{{ route('bonus-reports.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('bonus-reports.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="gift" class="menu-icon w-4 h-4"></i>
-                    <span class="menu-text">Rekap Bonus</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Rekap Bonus
-                    </span>
-                </a>
-                @endif
-                
+
                 @if(auth()->user()->employee_id)
                 <a href="{{ route('my-leaves.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('my-leaves.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
                     <i data-lucide="file-signature" class="menu-icon w-4 h-4"></i>
@@ -287,19 +101,125 @@
         </div>
 
         @if($isAdmin)
-        <!-- Group: Admin Izin & Cuti -->
+        <!-- Group 2: Akademik & Kesiswaan -->
         <div>
-            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 mt-4">
-                Admin Izin & Cuti
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Akademik & Kesiswaan
             </h3>
-            
-            <nav class="space-y-1 mb-2">
-                <!-- Riwayat Izin -->
+            <nav class="space-y-1">
+                <a href="{{ route('students.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                    {{ Request::routeIs('students.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
+                    text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="users" class="menu-icon w-4 h-4"></i>
+                        <span class="menu-text">Data Siswa</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Data Siswa
+                    </span>
+                </a>
+
+                <a href="{{ route('spmb.candidates.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                    {{ Request::routeIs('spmb.candidates.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
+                    text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="user-plus" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+                        <span class="menu-text">Siswa Baru SPMB</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Siswa Baru SPMB
+                    </span>
+                </a>
+
+                <a href="{{ route('classrooms.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
+                    {{ Request::routeIs('classrooms.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
+                    text-xs font-medium relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="university" class="menu-icon w-4 h-4"></i>
+                        <span class="menu-text">Rombongan Belajar</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Rombongan Belajar
+                    </span>
+                </a>
+
+                <a href="{{ route('coming-soon') }}"
+                    class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('coming-soon') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} transition-colors text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="calendar" class="menu-icon w-4 h-4"></i>
+                        <span class="menu-text">Jadwal Kelas</span>
+                    </div>
+                    <span class="menu-text text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Jadwal Kelas
+                    </span>
+                </a>
+
+                <a href="{{ route('class-levels.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
+                    {{ Request::routeIs('class-levels.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
+                    text-xs font-medium relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="layers" class="menu-icon w-4 h-4"></i>
+                        <span class="menu-text">Tingkat Kelas</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Tingkat Kelas
+                    </span>
+                </a>
+
+                <a href="{{ route('academic-years.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
+                    {{ Request::routeIs('academic-years.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
+                    text-xs font-medium relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="calendar-range" class="menu-icon w-4 h-4"></i>
+                        <span class="menu-text">Tahun Ajaran</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Tahun Ajaran
+                    </span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Group 3: Kepegawaian (HRD) -->
+        <div>
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Kepegawaian (HRD)
+            </h3>
+            <nav class="space-y-1">
+                <!-- Data Pegawai -->
+                <a href="{{ route('employees.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('employees.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <i data-lucide="users-2" class="menu-icon w-4 h-4"></i>
+                    <span class="menu-text">Data Pegawai</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-805 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Data Pegawai
+                    </span>
+                </a>
+
+                <!-- Data Guru -->
+                <a href="{{ route('teachers.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('teachers.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <i data-lucide="graduation-cap" class="menu-icon w-4 h-4"></i>
+                    <span class="menu-text">Data Guru</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Data Guru
+                    </span>
+                </a>
+
+                <!-- Rekap Bonus -->
+                <a href="{{ route('bonus-reports.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('bonus-reports.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <i data-lucide="gift" class="menu-icon w-4 h-4"></i>
+                    <span class="menu-text">Rekap Bonus</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Rekap Bonus
+                    </span>
+                </a>
+
+                <!-- Riwayat Izin & Cuti -->
                 <a href="{{ route('leaves.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('leaves.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
                     <i data-lucide="calendar-clock" class="menu-icon w-4 h-4"></i>
-                    <span class="menu-text">Riwayat Izin</span>
+                    <span class="menu-text">Riwayat Izin & Cuti</span>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-805 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Riwayat Izin
+                        Riwayat Izin & Cuti
                     </span>
                 </a>
 
@@ -309,24 +229,6 @@
                     <span class="menu-text">Tipe Izin</span>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-805 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
                         Tipe Izin
-                    </span>
-                </a>
-            </nav>
-        </div>
-        @endif
-
-        @if($isAdmin)
-        <!-- Group: Manajemen Pegawai -->
-        <div>
-            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Manajemen Pegawai</h3>
-            <nav class="space-y-1">
-                <!-- Data Pegawai -->
-                <a href="{{ route('employees.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('employees.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="users-2" class="menu-icon w-4 h-4"></i>
-                    <span class="menu-text">Data Pegawai</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-805 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Data Pegawai
                     </span>
                 </a>
 
@@ -340,37 +242,113 @@
                 </a>
             </nav>
         </div>
-        @endif
 
-        <!-- Group 4: Manajemen -->
+        <!-- Group 4: Homebase (Dropdown style) -->
         <div>
-            <h3
-                class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Manajemen</h3>
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Homebase
+            </h3>
             <nav class="space-y-1">
-                @if($isAdmin)
-                <a href="{{ route('coming-soon') }}"
-                    class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('coming-soon') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} transition-colors text-xs relative group">
+                <a href="{{ route('coming-soon') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
+                        {{ Request::routeIs('coming-soon') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
+                        text-xs font-medium relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="calendar" class="menu-icon w-4 h-4"></i>
-                        <span class="menu-text">Jadwal Kelas</span>
+                        <i data-lucide="podium" class="menu-icon w-4 h-4"></i>
+                        <span class="menu-text">Leaderboard</span>
                     </div>
                     <span class="menu-text text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Jadwal Kelas
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Leaderboard
                     </span>
                 </a>
-                @endif
+                <div x-data="{ open1: false, open2: false }">
+                    <button @click="open1 = !open1"
+                        class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="database" class="menu-icon w-4 h-4"></i>
+                            <span class="menu-text">Database</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 transition-transform duration-200"
+                            :style="open1 ? 'transform: rotate(90deg);' : ''"></i>
+                    </button>
+
+                    <!-- Dropdown content with line connector -->
+                    <div x-show="open1" x-collapse
+                        class="mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1"
+                        style="margin-left:20px">
+                        <a href="{{ route('coming-soon') }}"
+                            class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-3 h-3 text-red-600"></i>
+                                <span>Homebase Merah</span>
+                            </div>
+                            <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
+                        </a>
+                        <a href="{{ route('coming-soon') }}"
+                            class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-3 h-3 text-yellow-600"></i>
+                                <span>Homebase Kuning</span>
+                            </div>
+                            <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
+                        </a>
+                        <a href="{{ route('coming-soon') }}"
+                            class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-3 h-3 text-green-600"></i>
+                                <span>Homebase Hijau</span>
+                            </div>
+                            <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
+                        </a>
+                        <a href="{{ route('coming-soon') }}"
+                            class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-3 h-3 text-blue-600"></i>
+                                <span>Homebase Biru</span>
+                            </div>
+                            <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
+                        </a>
+                        <a href="{{ route('coming-soon') }}"
+                            class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('coming-soon') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-3 h-3 text-indigo-600"></i>
+                                <span>Homebase Ungu</span>
+                            </div>
+                            <span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
+                        </a>
+                    </div>
+                    <a href="{{ route('coming-soon') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg 
+                        {{ Request::routeIs('coming-soon') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} 
+                        text-xs font-medium relative group">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="star-check" class="menu-icon w-4 h-4"></i>
+                            <span class="menu-text">Input Poin</span>
+                        </div>
+                        <span class="menu-text text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Dev</span>
+                        <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                            Input Poin
+                        </span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+        @endif
+
+        <!-- Group 5: Pengaturan & Sistem -->
+        <div>
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Pengaturan & Sistem
+            </h3>
+            <nav class="space-y-1">
                 <a href="{{ route('announcements.index') }}"
                     class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('announcements.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} transition-colors text-xs relative group">
                     <i data-lucide="bell" class="menu-icon w-4 h-4"></i>
                     <span class="menu-text">Pengumuman</span>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
                         Pengumuman
                     </span>
                 </a>
+
                 @if(auth()->user()->hasRole('super_admin'))
                 <a href="{{ route('users.index') }}"
                     class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg
@@ -378,8 +356,7 @@
                     text-xs relative group">
                     <i data-lucide="user-cog" class="menu-icon w-4 h-4"></i>
                     <span class="menu-text">Manajemen User</span>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
                         Manajemen User
                     </span>
                 </a>
@@ -390,8 +367,7 @@
                     text-xs relative group">
                     <i data-lucide="file-text" class="menu-icon w-4 h-4"></i>
                     <span class="menu-text">Log Sistem</span>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
                         Log Sistem
                     </span>
                 </a>
@@ -402,8 +378,7 @@
                     text-xs relative group">
                     <i data-lucide="settings" class="menu-icon w-4 h-4"></i>
                     <span class="menu-text">Pengaturan</span>
-                    <span
-                        class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
                         Pengaturan
                     </span>
                 </a>
@@ -411,8 +386,6 @@
             </nav>
         </div>
     </div>
-
-
 
     <!-- Bottom User Account Profile Menu (dropdown lookalike at bottom of sidebar-07) -->
     <div class="pt-2 border-t border-slate-200 dark:border-slate-800 relative" x-data="{ open: false }">
