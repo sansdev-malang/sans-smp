@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -12,6 +15,8 @@ class DashboardController extends Controller
         $isAdmin = in_array($user->role, ['super_admin', 'admin_sd', 'admin_paud', 'admin_smp', 'kepala_sekolah', 'waka']);
 
         $employeeCount = \App\Models\Employee::count();
+        $studentCount = \App\Models\Student::where('status', 'active')->count() ?: \App\Models\Student::count();
+        $classroomCount = \App\Models\Classroom::count();
         $gpkCount = 0;
         $gpqCount = 0;
 
@@ -24,35 +29,41 @@ class DashboardController extends Controller
         $totalPresentToday = 0;
         $totalPresentYesterday = 0;
 
-        try {
-            $hrdUrl = \App\Models\Setting::get('hrd_api_url', config('app.hrd_url', 'http://sans-hrd.test'));
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-API-TOKEN' => config('app.hrd_api_token')
-            ])->get(rtrim($hrdUrl, '/') . '/api/attendance-matrix', [
-                'school_unit_id' => config('app.school_unit_id', 3),
-                'unit_id' => strtolower(config('app.school_unit', 'smp')),
-                'start_date' => $yesterday,
-                'end_date' => $today
-            ]);
-            
-            $reports = $response->json()['data'] ?? [];
-            
-            foreach ($reports as $report) {
-                $details = $report['daily_details'] ?? [];
-                
-                // Cek hari ini
-                if (($details[$today]['status'] ?? '') === 'Hadir') {
-                    $totalPresentToday++;
-                    $employeePresent++;
-                }
-                
-                // Cek kemarin
-                if (($details[$yesterday]['status'] ?? '') === 'Hadir') {
-                    $totalPresentYesterday++;
-                }
+        $schoolUnitId = config('app.school_unit_id', 3);
+        $hrdUrl = \App\Models\Setting::get('hrd_api_url', config('app.hrd_url', 'http://sans-hrd.test'));
+        $cacheKey = 'hrd_matrix_unit_' . $schoolUnitId . '_' . $today;
+
+        $reports = Cache::remember($cacheKey, 60, function () use ($hrdUrl, $schoolUnitId, $yesterday, $today) {
+            try {
+                $response = Http::timeout(3)->withHeaders([
+                    'X-API-TOKEN' => config('app.hrd_api_token')
+                ])->get(rtrim($hrdUrl, '/') . '/api/attendance-matrix', [
+                    'school_unit_id' => $schoolUnitId,
+                    'unit_id' => strtolower(config('app.school_unit', 'smp')),
+                    'start_date' => $yesterday,
+                    'end_date' => $today
+                ]);
+
+                return $response->successful() ? ($response->json()['data'] ?? []) : [];
+            } catch (\Exception $e) {
+                Log::warning('Gagal memuat absensi dashboard dari HRD: ' . $e->getMessage());
+                return [];
             }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal memuat absensi dashboard dari HRD: ' . $e->getMessage());
+        });
+
+        foreach ($reports as $report) {
+            $details = $report['daily_details'] ?? [];
+            
+            // Cek hari ini
+            if (($details[$today]['status'] ?? '') === 'Hadir') {
+                $totalPresentToday++;
+                $employeePresent++;
+            }
+            
+            // Cek kemarin
+            if (($details[$yesterday]['status'] ?? '') === 'Hadir') {
+                $totalPresentYesterday++;
+            }
         }
 
         $employeeAttendancePercent = $employeeCount > 0 ? round(($employeePresent / $employeeCount) * 100, 1) : 0;
@@ -117,10 +128,7 @@ class DashboardController extends Controller
                 ->pluck('total', 'date')
                 ->toArray();
 
-            $totalActiveEmployees = \App\Models\Employee::count();
-            if ($totalActiveEmployees <= 0) {
-                $totalActiveEmployees = 1;
-            }
+            $totalActiveEmployees = $employeeCount > 0 ? $employeeCount : 1;
 
             foreach ($dates as $index => $dateStr) {
                 $count = $attendanceCounts[$dateStr] ?? 0;
@@ -192,22 +200,28 @@ class DashboardController extends Controller
                 $hrdUrl = \App\Models\Setting::get('hrd_api_url', config('app.hrd_url', 'http://sans-hrd.test'));
                 try {
                     $cutoffDate = (int) \App\Models\Setting::get('payroll_cutoff_date', 26);
-                    $today = now();
-                    $month = $today->day > $cutoffDate ? $today->copy()->startOfMonth()->addMonth()->format('Y-m') : $today->format('Y-m');
+                    $todayDate = now();
+                    $month = $todayDate->day > $cutoffDate ? $todayDate->copy()->startOfMonth()->addMonth()->format('Y-m') : $todayDate->format('Y-m');
+                    $bonusCacheKey = 'hrd_bonus_report_' . $schoolUnitId . '_' . $month;
 
-                    $response = \Illuminate\Support\Facades\Http::timeout(15)->withHeaders([
-                        'X-API-TOKEN' => config('app.hrd_api_token')
-                    ])->get(rtrim($hrdUrl, '/') . '/api/bonus-reports', [
-                        'school_unit_id' => config('app.school_unit_id'),
-                        'month' => $month
-                    ]);
-                    if ($response->successful()) {
-                        $json = $response->json();
-                        $reports = collect($json['data'] ?? []);
-                        $myReport = $reports->first(function ($item) use ($employee) {
-                            return ($item['employee']['id'] ?? 0) == $employee->id;
-                        });
-                    }
+                    $reports = Cache::remember($bonusCacheKey, 120, function () use ($hrdUrl, $schoolUnitId, $month) {
+                        try {
+                            $response = Http::timeout(3)->withHeaders([
+                                'X-API-TOKEN' => config('app.hrd_api_token')
+                            ])->get(rtrim($hrdUrl, '/') . '/api/bonus-reports', [
+                                'school_unit_id' => $schoolUnitId,
+                                'month' => $month
+                            ]);
+                            return $response->successful() ? ($response->json()['data'] ?? []) : [];
+                        } catch (\Exception $e) {
+                            return [];
+                        }
+                    });
+
+                    $reportsCol = collect($reports);
+                    $myReport = $reportsCol->first(function ($item) use ($employee) {
+                        return ($item['employee']['id'] ?? 0) == $employee->id;
+                    });
                 } catch (\Exception $e) {
                     // Fallback silently
                 }
@@ -355,7 +369,7 @@ class DashboardController extends Controller
         $activityLogs = collect();
         if ($isAdmin) {
             // 1. Fetch Leave Requests
-            $leaves = \App\Models\LeaveRequest::with('employee')->latest()->take(10)->get();
+            $leaves = \App\Models\LeaveRequest::with(['employee', 'leaveType'])->latest()->take(10)->get();
             foreach ($leaves as $leave) {
                 $statusText = 'mengajukan cuti/izin';
                 if ($leave->status === 'Approved') {
@@ -400,7 +414,7 @@ class DashboardController extends Controller
             }
 
             // 3. Fetch Employee Updates / Creations
-            $newEmployees = \App\Models\Employee::latest()->take(10)->get();
+            $newEmployees = \App\Models\Employee::with('employeeType')->latest()->take(10)->get();
             foreach ($newEmployees as $emp) {
                 $isUpdate = $emp->updated_at->gt($emp->created_at->addMinutes(5));
                 $activityLogs->push([
@@ -420,6 +434,8 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'isAdmin',
             'employeeCount',
+            'studentCount',
+            'classroomCount',
             'gpkCount',
             'gpqCount',
             'employeeAttendancePercent',
