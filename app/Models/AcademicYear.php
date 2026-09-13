@@ -36,6 +36,27 @@ class AcademicYear extends Model
         return $this->hasMany(Student::class);
     }
 
+    /**
+     * Get formatted semester (e.g. Ganjil, Genap).
+     */
+    public function getSemesterAttribute($value)
+    {
+        return ucfirst(strtolower($value ?? 'ganjil'));
+    }
+
+    /**
+     * Set semester to lowercase in DB.
+     */
+    public function setSemesterAttribute($value)
+    {
+        $this->attributes['semester'] = strtolower($value ?? 'ganjil');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
     public static function getActive(): ?self
     {
         return static::where('is_active', true)->first();
