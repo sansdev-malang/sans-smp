@@ -33,14 +33,14 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
     // Classrooms (Rombongan Belajar)
     Route::get('/classrooms/{id}/students', [ClassroomController::class, 'students'])->name('classrooms.students');
     Route::resource('classrooms', ClassroomController::class);
-    Route::get('/rombel', fn() => redirect()->route('classrooms.index'));
+    Route::get('/rombel', fn() => redirect()->route('classrooms.index'))->name('rombel');
 
     // Students (Data Siswa & Bulk Excel Import)
     Route::get('students/download-template', [StudentController::class, 'downloadTemplate'])->name('students.download-template');
     Route::get('students/template', [StudentController::class, 'downloadTemplate'])->name('students.template');
     Route::post('students/import', [StudentController::class, 'import'])->name('students.import');
     Route::resource('students', StudentController::class);
-    Route::get('/siswa', fn() => redirect()->route('students.index'));
+    Route::get('/siswa', fn() => redirect()->route('students.index'))->name('siswa');
 });
 
 Route::get('/guru', function () {
