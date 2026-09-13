@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SpmbCandidate extends Model
 {
@@ -19,6 +20,7 @@ class SpmbCandidate extends Model
         'spmb_registered_at' => 'datetime',
         'activated_at' => 'datetime',
         'is_active_student' => 'boolean',
+        'is_enrolled' => 'boolean',
         'documents' => 'array',
         'payments_data' => 'array',
         'raw_payload' => 'array',
@@ -31,6 +33,21 @@ class SpmbCandidate extends Model
         'student_photo_url',
         'formatted_documents'
     ];
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function getRegistrationStatusAttribute(): string
+    {
+        return $this->attributes['spmb_status'] ?? ($this->attributes['registration_status'] ?? 'verified');
+    }
+
+    public function getPaymentStatusAttribute(): string
+    {
+        return $this->attributes['spmb_payment_status'] ?? ($this->attributes['payment_status'] ?? 'unpaid');
+    }
 
     /**
      * URL Foto Calon Siswa
@@ -123,7 +140,8 @@ class SpmbCandidate extends Model
             $cleanPhone = '62' . substr($cleanPhone, 1);
         }
 
-        $message = urlencode("Assalamu'alaikum wr. wb. Ayah/Bunda dari ananda *{$this->full_name}*, kami dari *SMP Anak Saleh* ingin menginformasikan terkait data pendaftaran SPMB.");
+        $appName = function_exists('setting') ? setting('app_name', 'SMP Anak Saleh') : 'SMP Anak Saleh';
+        $message = urlencode("Assalamu'alaikum wr. wb. Ayah/Bunda dari ananda *{$this->full_name}*, kami dari *{$appName}* ingin menginformasikan terkait data pendaftaran SPMB.");
         return "https://wa.me/{$cleanPhone}?text={$message}";
     }
 
