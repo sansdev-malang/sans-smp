@@ -30,7 +30,7 @@
                     'my-leaves.index' => 'Izin & Cuti Saya',
                     'my-attendance' => 'Absensi Saya',
                     'payslips.index' => 'Slip Gaji Saya',
-                    'spmb.candidates.index' => 'Siswa Baru SPMB',
+                    'spmb.candidates.index' => 'SPMB',
                     'settings' => 'Pengaturan Aplikasi',
                     'users.index' => 'Manajemen Pengguna',
                     'teachers.index' => 'Data Guru',
@@ -62,6 +62,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
         <style>
+            [x-cloak] { display: none !important; }
             #nprogress .bar {
                 background: #4f46e5 !important; /* indigo-600 */
                 height: 4px !important; /* Default height */
