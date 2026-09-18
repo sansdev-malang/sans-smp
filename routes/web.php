@@ -45,9 +45,7 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
     Route::get('/siswa', fn() => redirect()->route('students.index'))->name('siswa');
 });
 
-Route::get('/guru', function () {
-    return view('admin.guru');
-})->middleware(['auth', 'verified'])->name('guru');
+Route::get('/guru', fn() => redirect()->route('teachers.index'))->name('guru');
 
 // Route Leave Actions
 Route::post('/leaves/{id}/approve', [\App\Http\Controllers\LeaveRequestController::class, 'approve'])->middleware(['auth', 'verified', 'role:admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->name('leaves.approve');
