@@ -13,6 +13,7 @@ use App\Http\Controllers\ClassLevelController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SpmbCandidateController;
+use App\Http\Controllers\PicketScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -92,6 +93,15 @@ Route::middleware(['auth', 'verified', 'role:admin_sd,admin_paud,admin_smp,kepal
     Route::resource('attendances', AttendanceController::class)->except(['index', 'show']);
     Route::resource('leaves', \App\Http\Controllers\LeaveRequestController::class);
     Route::resource('announcements', \App\Http\Controllers\AnnouncementController::class)->except(['index', 'show']);
+
+    // Picket Schedule Admin Management
+    Route::get('admin/picket-schedules', [PicketScheduleController::class, 'adminDashboard'])->name('picket-schedules.admin');
+    Route::post('admin/picket-schedules/assignment', [PicketScheduleController::class, 'storeAssignment'])->name('picket-schedules.assignment.store');
+    Route::delete('admin/picket-schedules/assignment/{id}', [PicketScheduleController::class, 'destroyAssignment'])->name('picket-schedules.assignment.destroy');
+    Route::post('admin/picket-schedules/areas', [PicketScheduleController::class, 'storeArea'])->name('picket-schedules.areas.store');
+    Route::put('admin/picket-schedules/areas/{id}', [PicketScheduleController::class, 'updateArea'])->name('picket-schedules.areas.update');
+    Route::delete('admin/picket-schedules/areas/{id}', [PicketScheduleController::class, 'destroyArea'])->name('picket-schedules.areas.destroy');
+    Route::post('admin/picket-schedules/swap/{id}/approve-admin', [PicketScheduleController::class, 'approveSwapAdmin'])->name('picket-schedules.swap.approve-admin');
 });
 
 Route::middleware(['auth', 'verified', 'role:employee,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->group(function () {
@@ -103,6 +113,13 @@ Route::middleware(['auth', 'verified', 'role:employee,admin_sd,admin_paud,admin_
     Route::resource('my-leaves', \App\Http\Controllers\MyLeaveRequestController::class);
     Route::get('announcements/{announcement}/download', [\App\Http\Controllers\AnnouncementController::class, 'download'])->name('announcements.download');
     Route::resource('announcements', \App\Http\Controllers\AnnouncementController::class)->only(['index', 'show']);
+
+    // Picket Matrix, Swaps, & PDF
+    Route::get('picket-schedules', [PicketScheduleController::class, 'index'])->name('picket-schedules.index');
+    Route::get('picket-schedules/download', [PicketScheduleController::class, 'downloadPdf'])->name('picket-schedules.download');
+    Route::post('picket-schedules/swap', [PicketScheduleController::class, 'requestSwap'])->name('picket-schedules.swap.request');
+    Route::post('picket-schedules/swap/{id}/approve-target', [PicketScheduleController::class, 'approveSwapTarget'])->name('picket-schedules.swap.approve-target');
+    Route::post('picket-schedules/swap/{id}/reject', [PicketScheduleController::class, 'rejectSwap'])->name('picket-schedules.swap.reject');
 
     Route::get('/notifications/{id}/read', function ($id) {
         $notification = auth()->user()->notifications()->findOrFail($id);
@@ -132,6 +149,7 @@ Route::middleware('hrd.api')->prefix('api/v1/hrd')->group(function () {
     Route::post('sync/leave-types', [\App\Http\Controllers\Api\HrdApiController::class, 'syncLeaveType']);
     Route::get('leave-requests', [\App\Http\Controllers\Api\HrdApiController::class, 'leaveRequests']);
     Route::post('leave-requests/decision', [\App\Http\Controllers\Api\HrdApiController::class, 'leaveDecision']);
+    Route::get('picket-assignments', [\App\Http\Controllers\Api\HrdApiController::class, 'picketAssignments']);
 });
 
 Route::middleware(['auth', 'role:super_admin'])->group(function () {
