@@ -592,6 +592,10 @@
                             <i data-lucide="hard-drive" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
                             <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Mesin Absensi</span>
                         </button>
+                        <button onclick="window.location='{{ route('picket-schedules.admin') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
+                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Jadwal Piket</span>
+                        </button>
                     @else
                         <button onclick="window.location='{{ route('my-leaves.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
                             <i data-lucide="file-text" class="w-4 h-4 text-indigo-650 dark:text-indigo-400 group-hover:scale-105 transition-transform"></i>
@@ -613,8 +617,131 @@
                 </div>
             </div>
 
+            <!-- Jadwal Piket Saya Card -->
+            @if(isset($myPicketSchedules) && $myPicketSchedules->isNotEmpty())
+            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between" x-data="{ openJobs: null }">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4 font-nasalization">Jadwal Piket Saya</h3>
+                    
+                    @if($myPicketToday)
+                        <!-- Hari Ini Ada Piket -->
+                        <div class="bg-gradient-to-br from-indigo-500/10 via-indigo-600/5 to-transparent dark:from-indigo-950/30 dark:via-indigo-900/10 dark:to-transparent border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-4 mb-4 relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
+                            
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/30 mt-0.5">
+                                    <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-600 text-white uppercase tracking-wider animate-pulse">TUGAS HARI INI</span>
+                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{{ [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'][$myPicketToday->day_of_week] ?? '-' }}</span>
+                                    </div>
+                                    <h4 class="text-xs font-extrabold text-slate-900 dark:text-slate-100 mt-1 leading-snug break-words pr-2">
+                                        {{ $myPicketToday->picketArea->name }}
+                                    </h4>
+                                    
+                                    <div class="flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400 text-[10px] mt-1.5">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                        <span>{{ $myPicketToday->picketArea->duty_hours }} WIB</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if($myPicketToday->picketArea->jobs)
+                                <div class="mt-3.5 pt-3.5 border-t border-indigo-100/50 dark:border-indigo-900/30">
+                                    <p class="text-[9px] font-black text-slate-700 dark:text-slate-350 uppercase tracking-widest mb-1.5">TUPOKSI ANDA:</p>
+                                    <div class="space-y-2">
+                                        @foreach(explode("\n", $myPicketToday->picketArea->jobs) as $job)
+                                            @if(trim($job))
+                                                <div class="flex items-start gap-2 text-[10px] text-slate-655 dark:text-slate-400 leading-relaxed font-medium">
+                                                    <div class="w-3.5 h-3.5 rounded-md bg-indigo-50 dark:bg-indigo-955 text-indigo-600 dark:text-indigo-450 flex items-center justify-center shrink-0 shadow-3xs border border-indigo-100/10 mt-0.5">
+                                                        <i data-lucide="check" class="w-2.5 h-2.5 stroke-[3]"></i>
+                                                    </div>
+                                                    <p class="flex-1">{{ trim($job) }}</p>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
+                    <!-- List Roster Jadwal Mingguan -->
+                    <div class="space-y-2.5">
+                        @php
+                            $groupedSchedules = $myPicketSchedules->groupBy('picket_area_id');
+                        @endphp
+                        @forelse($groupedSchedules as $areaId => $schedulesGroup)
+                            @php
+                                $area = $schedulesGroup->first()->picketArea;
+                                $daysOfWeek = $schedulesGroup->pluck('day_of_week')->sort()->toArray();
+                                $hasTodayInGroup = in_array($todayDayOfWeek, $daysOfWeek);
+                            @endphp
+                            <div class="p-3 border rounded-2xl transition-all duration-200 cursor-pointer {{ $hasTodayInGroup ? 'bg-indigo-500/5 dark:bg-indigo-500/5 border-indigo-200 dark:border-indigo-950' : 'bg-slate-50/50 dark:bg-slate-950/30 border-slate-200/50 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-950' }}"
+                                @click="openJobs = (openJobs === {{ $areaId }} ? null : {{ $areaId }})">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        <div class="w-7 h-7 rounded-lg {{ $hasTodayInGroup ? 'bg-indigo-650 text-white shadow-3xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-400' }} flex items-center justify-center shrink-0 border border-indigo-150/10 mt-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
+                                        </div>
+                                        <div class="flex flex-col min-w-0">
+                                            <span class="font-bold text-[11px] {{ $hasTodayInGroup ? 'text-indigo-950 dark:text-indigo-300' : 'text-slate-800 dark:text-slate-200' }} leading-tight break-words">{{ $area->name }}</span>
+                                            <span class="text-[9px] text-slate-500 dark:text-slate-300 mt-0.5">Jam: {{ $area->duty_hours }}</span>
+                                            
+                                            <!-- Day badges list -->
+                                            <div class="flex items-center gap-1.5 flex-wrap mt-2">
+                                                @foreach($daysOfWeek as $dayNum)
+                                                    @php
+                                                        $isDayToday = ($dayNum === $todayDayOfWeek);
+                                                    @endphp
+                                                    <span class="px-2 py-0.5 rounded-lg text-[9px] font-bold {{ $isDayToday ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-350' }} shrink-0">
+                                                        {{ [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'][$dayNum] }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if($area->jobs)
+                                        <button type="button" class="shrink-0 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-1 cursor-pointer border-0 bg-transparent flex items-center justify-center" title="Lihat Tugas/Tupoksi">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform duration-200" :class="openJobs === {{ $areaId }} && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                                        </button>
+                                    @endif
+                                </div>
+                                
+                                <!-- Expandable Jobs/Tupoksi List -->
+                                @if($area->jobs)
+                                    <div x-show="openJobs === {{ $areaId }}" @click.stop x-collapse x-cloak class="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 text-[10px] text-slate-550 dark:text-slate-400 space-y-2">
+                                        <p class="font-black text-slate-700 dark:text-slate-350 uppercase tracking-widest text-[8px]">TUGAS & TUPOKSI:</p>
+                                        <div class="space-y-1.5 pl-1">
+                                            @foreach(explode("\n", $area->jobs) as $job)
+                                                @if(trim($job))
+                                                    <div class="flex items-start gap-1.5 leading-relaxed font-medium">
+                                                        <span class="w-1 h-1 rounded-full {{ $hasTodayInGroup ? 'bg-indigo-500' : 'bg-slate-400 dark:bg-slate-600' }} mt-1.5 shrink-0"></span>
+                                                        <p>{{ trim($job) }}</p>
+                                                    </div>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        @empty
+                            @if(!$myPicketToday)
+                                <div class="text-xs text-slate-500 text-center py-8">
+                                    <i data-lucide="calendar" class="w-6 h-6 text-slate-300 dark:text-slate-750 mx-auto mb-2"></i>
+                                    Anda tidak memiliki jadwal piket minggu ini.
+                                </div>
+                            @endif
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Recent Activity Logs -->
-            <div class="animate-card lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+            <div class="animate-card {{ (!isset($myPicketSchedules) || $myPicketSchedules->isEmpty()) ? 'lg:col-span-2' : 'lg:col-span-1' }} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
                 @if($isAdmin)
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4">Log Aktivitas Terbaru</h3>
                      <div class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin">

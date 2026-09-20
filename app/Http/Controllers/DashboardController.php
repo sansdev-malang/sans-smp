@@ -369,6 +369,20 @@ class DashboardController extends Controller
 
         $myActiveShifts = $myReport['active_shifts'] ?? [];
 
+        // Fetch picket schedules for employee
+        $myPicketSchedules = collect();
+        $myPicketToday = null;
+        $todayDayOfWeek = now()->dayOfWeek; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+        if (!$isAdmin && $user->employee_id) {
+            $myPicketSchedules = \App\Models\PicketSchedule::where('employee_id', $user->employee_id)
+                ->with(['picketArea', 'employee'])
+                ->orderBy('day_of_week')
+                ->get();
+
+            $myPicketToday = $myPicketSchedules->firstWhere('day_of_week', $todayDayOfWeek);
+        }
+
         $myCalendarDays = [];
         if (!empty($dailyDetails)) {
             ksort($dailyDetails);
@@ -544,6 +558,9 @@ class DashboardController extends Controller
             'totalLateDays',
             'myActiveShifts',
             'myCalendarDays',
+            'myPicketSchedules',
+            'myPicketToday',
+            'todayDayOfWeek',
             'activityLogs',
             'adminChartPoints'
         ));
