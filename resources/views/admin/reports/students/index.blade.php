@@ -207,7 +207,7 @@
                     </div>
                     <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Status Tapel:</span>
-                        <span class="font-bold text-emerald-600 dark:text-emerald-400">6 Tingkat (1-6)</span>
+                        <span class="font-bold text-emerald-600 dark:text-emerald-400">3 Tingkat (7-9)</span>
                     </div>
                 </div>
             </div>
@@ -523,7 +523,7 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="text-xs px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 font-bold font-mono text-indigo-700 dark:text-indigo-300 shadow-xs">
-                        6 Level • 24 Rombel
+                        {{ count($levelReports) }} Jenjang • {{ $grandTotalClassrooms }} Rombel
                     </span>
                 </div>
             </div>
@@ -535,7 +535,7 @@
                     <div class="flex items-center gap-2">
                         <i data-lucide="users-2" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
-                            Data Peserta Didik & Formasi Guru {{ function_exists('setting') ? setting('unit_name', 'SD ANAK SALEH') : 'SD ANAK SALEH' }}
+                            Data Peserta Didik & Formasi Guru {{ function_exists('setting') ? setting('unit_name', 'SMP Anak Saleh') : 'SMP Anak Saleh' }}
                         </h2>
                     </div>
                     <span class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
@@ -581,9 +581,13 @@
                                             <div class="flex flex-wrap items-center gap-2 text-xs">
                                                 <div class="flex items-center gap-1.5">
                                                     <span class="text-slate-500 dark:text-slate-400 font-semibold text-[11px]">Koordinator:</span>
-                                                    <span class="px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold text-xs shadow-xs">
-                                                        {{ $lvl['coordinator'] ?? 'Koordinator ' . $lvl['level']->name }}
-                                                    </span>
+                                                    @if(!empty($lvl['coordinator']))
+                                                        <span class="px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold text-xs shadow-xs">
+                                                            {{ $lvl['coordinator'] }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-slate-400 italic text-[11px]">-</span>
+                                                    @endif
                                                 </div>
                                                 @if(!empty($lvl['assistants']))
                                                     <div class="flex items-center gap-1.5">
