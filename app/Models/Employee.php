@@ -44,10 +44,7 @@ class Employee extends Model
         'status',
     ];
 
-    /**
-     * Get the employee type.
-     */
-        protected $appends = ['raw_name'];
+    protected $appends = ['raw_name', 'photo_url'];
 
     public function getNameAttribute($value)
     {
@@ -59,6 +56,28 @@ class Employee extends Model
     public function getRawNameAttribute()
     {
         return $this->attributes['name'] ?? '';
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return $this->name;
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (empty($this->photo)) {
+            return null;
+        }
+
+        if (filter_var($this->photo, FILTER_VALIDATE_URL)) {
+            return $this->photo;
+        }
+
+        if (str_contains($this->photo, 'photos/')) {
+            return asset('storage/' . ltrim($this->photo, '/'));
+        }
+
+        return asset('storage/photos/' . ltrim($this->photo, '/'));
     }
 
     public function employeeType()
@@ -193,6 +212,14 @@ class Employee extends Model
         $name = preg_replace('/\s+/', ' ', $name);
         $frontTitle = trim($frontTitle);
         $backTitle = trim($backTitle);
+    }
+
+    /**
+     * Siswa PDBK yang didampingi oleh Guru ini sebagai GPK.
+     */
+    public function assistedStudents(): HasMany
+    {
+        return $this->hasMany(Student::class, 'gpk_employee_id');
     }
 }
 

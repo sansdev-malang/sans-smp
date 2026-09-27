@@ -11,11 +11,16 @@ class Classroom extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'capacity' => 32,
+        'is_active' => true,
+    ];
+
     protected $fillable = [
-        'academic_year_id',
-        'class_level_id',
         'name',
-        'room_number',
+        'code',
+        'class_level_id',
+        'academic_year_id',
         'homeroom_teacher_id',
         'capacity',
         'is_active',
@@ -27,14 +32,14 @@ class Classroom extends Model
         'capacity' => 'integer',
     ];
 
-    public function academicYear(): BelongsTo
-    {
-        return $this->belongsTo(AcademicYear::class);
-    }
-
     public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
+    }
+
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
     }
 
     public function homeroomTeacher(): BelongsTo
@@ -47,6 +52,27 @@ class Classroom extends Model
         return $this->hasMany(Student::class);
     }
 
+    protected $appends = [
+        'full_name',
+    ];
+
+    /**
+     * Get combined display name (e.g. "1A Berlian" or "1A").
+     */
+    public function getFullNameAttribute(): string
+    {
+        if ($this->code && $this->name) {
+            if (str_starts_with(strtoupper($this->name), strtoupper($this->code))) {
+                return $this->name;
+            }
+            return "{$this->code} {$this->name}";
+        }
+        return $this->name ?: ($this->code ?: '-');
+    }
+
+    /**
+     * Get the active students count.
+     */
     public function getActiveStudentsCountAttribute(): int
     {
         return $this->students()->where('status', 'aktif')->count();

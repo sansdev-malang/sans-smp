@@ -40,10 +40,29 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
 
     // Students (Data Siswa & Bulk Excel Import)
     Route::get('students/download-template', [StudentController::class, 'downloadTemplate'])->name('students.download-template');
-    Route::get('students/template', [StudentController::class, 'downloadTemplate'])->name('students.template');
     Route::post('students/import', [StudentController::class, 'import'])->name('students.import');
+    Route::get('students/export/excel', [StudentController::class, 'exportExcel'])->name('students.export.excel');
+    Route::get('students/export/pdf', [StudentController::class, 'exportPdf'])->name('students.export.pdf');
+    Route::get('students/print', [StudentController::class, 'print'])->name('students.print');
     Route::resource('students', StudentController::class);
     Route::get('/siswa', fn() => redirect()->route('students.index'))->name('siswa');
+
+    // Student & Classroom Distribution Report (Rekapitulasi Rombel & Kesiswaan - Sheet 2 TU)
+    Route::get('student-reports', [\App\Http\Controllers\StudentReportController::class, 'index'])->name('student-reports.index');
+    Route::get('student-reports/print', [\App\Http\Controllers\StudentReportController::class, 'print'])->name('student-reports.print');
+    Route::get('student-reports/export', [\App\Http\Controllers\StudentReportController::class, 'export'])->name('student-reports.export');
+
+    // Class Promotions & Graduation (Kenaikan Kelas & Kelulusan)
+    Route::get('class-promotions', [\App\Http\Controllers\ClassPromotionController::class, 'index'])->name('promotions.index');
+    Route::get('class-promotions/students', [\App\Http\Controllers\ClassPromotionController::class, 'getStudents'])->name('promotions.students');
+    Route::post('class-promotions/process', [\App\Http\Controllers\ClassPromotionController::class, 'promote'])->name('promotions.process');
+    Route::post('class-promotions/graduate', [\App\Http\Controllers\ClassPromotionController::class, 'graduate'])->name('promotions.graduate');
+
+    // Alumni & Graduation Ledger
+    Route::get('alumni', [\App\Http\Controllers\AlumniController::class, 'index'])->name('alumni.index');
+    Route::get('alumni/{id}', [\App\Http\Controllers\AlumniController::class, 'show'])->name('alumni.show');
+    Route::get('alumni/{id}/print', [\App\Http\Controllers\AlumniController::class, 'print'])->name('alumni.print');
+    Route::put('alumni/{id}', [\App\Http\Controllers\AlumniController::class, 'update'])->name('alumni.update');
 });
 
 Route::get('/guru', fn() => redirect()->route('teachers.index'))->name('guru');

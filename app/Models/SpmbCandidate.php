@@ -90,8 +90,8 @@ class SpmbCandidate extends Model
             'birth_certificate_path' => 'Akta Kelahiran',
             'family_card' => 'Kartu Keluarga (KK)',
             'family_card_path' => 'Kartu Keluarga (KK)',
-            'diploma_certificate' => 'Ijazah / Surat Keterangan Aktif Sekolah',
-            'diploma_certificate_path' => 'Ijazah / Surat Keterangan Aktif Sekolah',
+            'diploma_certificate' => 'Ijazah / Surat Keterangan Aktif TK',
+            'diploma_certificate_path' => 'Ijazah / Surat Keterangan Aktif TK',
             'student_card' => 'NISN / KIA / Kartu Pelajar (Opsional)',
             'student_card_path' => 'NISN / KIA / Kartu Pelajar (Opsional)',
             'special_needs_assessment_path' => 'Asesmen Kebutuhan Khusus (Jika Ada)',
@@ -140,8 +140,8 @@ class SpmbCandidate extends Model
             $cleanPhone = '62' . substr($cleanPhone, 1);
         }
 
-        $appName = function_exists('setting') ? setting('app_name', 'SMP Anak Saleh') : 'SMP Anak Saleh';
-        $message = urlencode("Assalamu'alaikum wr. wb. Ayah/Bunda dari ananda *{$this->full_name}*, kami dari *{$appName}* ingin menginformasikan terkait data pendaftaran SPMB.");
+        $unitName = function_exists('setting') ? setting('unit_name', 'SMP Anak Saleh') : 'SMP Anak Saleh';
+        $message = urlencode("Assalamu'alaikum wr. wb. Ayah/Bunda dari ananda *{$this->full_name}*, kami dari *{$unitName}* ingin menginformasikan terkait data pendaftaran SPMB.");
         return "https://wa.me/{$cleanPhone}?text={$message}";
     }
 

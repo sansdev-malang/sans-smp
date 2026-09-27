@@ -5,3 +5,41 @@
 [x-cloak] {
     display: none !important;
 }
+
+/* ==========================================================================
+   Responsive Root Typography & UI Density System
+   Automatically adjusts UI scale smoothly based on screen resolution:
+   - 24"+ Monitors (1921px+): Roomy, spacious (16.5px)
+   - Desktop 1080p (1600px - 1920px): 16px
+   - 19"-21" Monitors (1367px - 1599px): Balanced, crisp (15px)
+   - 14"-19" Laptops/Screens (1024px - 1366px): 14.5px
+   - Default / Mobile: 15px
+   ========================================================================== */
+html {
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+}
+
+@media (min-width: 1024px) and (max-width: 1366px) {
+    html {
+        font-size: 14.5px;
+    }
+}
+
+@media (min-width: 1367px) and (max-width: 1599px) {
+    html {
+        font-size: 15px;
+    }
+}
+
+@media (min-width: 1600px) and (max-width: 1920px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+@media (min-width: 1921px) {
+    html {
+        font-size: 16.5px;
+    }
+}

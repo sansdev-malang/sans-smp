@@ -11,19 +11,14 @@ class ClassLevel extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
         'code',
-        'order_level',
+        'name',
+        'order',
         'description',
     ];
 
     public function classrooms(): HasMany
     {
         return $this->hasMany(Classroom::class);
-    }
-
-    public function students(): HasMany
-    {
-        return $this->hasMany(Student::class);
     }
 }
