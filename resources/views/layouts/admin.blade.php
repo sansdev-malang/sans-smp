@@ -55,6 +55,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
         <style>
             [x-cloak] { display: none !important; }
+            i[data-lucide] { display: inline-block; vertical-align: middle; }
             #nprogress .bar {
                 background: #4f46e5 !important; /* indigo-600 */
                 height: 4px !important; /* Default height */
@@ -311,14 +312,17 @@
         </div>
 
         <!-- TOAST NOTIFICATION CONTAINER -->
-        <div id="toast-notification" class="fixed bottom-5 right-5 z-50 hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 px-4 py-3 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 flex items-center gap-3 max-w-sm">
-            <div id="toast-icon-bg" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0">
+        <div id="toast-notification" class="fixed bottom-5 right-5 z-[99999] hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 px-4 py-3 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3 max-w-sm transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-auto">
+            <div id="toast-icon-bg" class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0">
                 <i id="toast-icon" data-lucide="check" class="w-4 h-4"></i>
             </div>
-            <div class="text-left">
-                <h5 id="toast-title" class="text-xs font-bold">Notifikasi</h5>
-                <p id="toast-message" class="text-xs text-slate-500 dark:text-slate-400"></p>
+            <div class="text-left flex-1 min-w-0 pr-1">
+                <h5 id="toast-title" class="text-xs font-bold leading-tight truncate">Notifikasi</h5>
+                <p id="toast-message" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug break-words"></p>
             </div>
+            <button type="button" onclick="hideToast()" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
         </div>
 
         <!-- Anime.js CDN -->
@@ -328,61 +332,129 @@
         <script src="https://unpkg.com/lucide@latest"></script>
         <script>
             // Initialize Lucide Icons
-            lucide.createIcons();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
 
-            // Global Toast helper function
-            function showToast(title, message, type = 'success') {
+            let toastTimeout = null;
+
+            function hideToast() {
+                const toast = document.getElementById('toast-notification');
+                if (!toast) return;
+                if (toastTimeout) clearTimeout(toastTimeout);
+
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }
+
+            // Global Toast helper function with flexible argument handling
+            function showToast(titleOrMessage, messageOrType = 'success', optionalType = null) {
                 const toast = document.getElementById('toast-notification');
                 const titleEl = document.getElementById('toast-title');
                 const messageEl = document.getElementById('toast-message');
                 const iconBg = document.getElementById('toast-icon-bg');
                 const icon = document.getElementById('toast-icon');
                 
-                if (!toast) return;
+                if (!toast || !titleEl || !messageEl || !iconBg || !icon) return;
+
+                let title = 'Notifikasi';
+                let message = '';
+                let type = 'success';
+
+                const knownTypes = ['success', 'error', 'danger', 'info', 'warning'];
+
+                if (optionalType !== null) {
+                    title = titleOrMessage || 'Notifikasi';
+                    message = messageOrType || '';
+                    type = optionalType;
+                } else if (knownTypes.includes((messageOrType || '').toLowerCase())) {
+                    message = titleOrMessage || '';
+                    type = (messageOrType || 'success').toLowerCase();
+                    title = type === 'error' || type === 'danger' ? 'Perhatian!' : (type === 'info' ? 'Informasi' : (type === 'warning' ? 'Peringatan' : 'Sukses!'));
+                } else {
+                    title = titleOrMessage || 'Notifikasi';
+                    message = messageOrType || '';
+                    type = 'success';
+                }
+
+                if (type === 'danger') type = 'error';
 
                 titleEl.textContent = title;
                 messageEl.textContent = message;
 
                 if (type === 'success') {
-                    iconBg.className = 'w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0';
+                    iconBg.className = 'w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0';
                     icon.setAttribute('data-lucide', 'check');
-                } else {
-                    iconBg.className = 'w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0';
+                } else if (type === 'error') {
+                    iconBg.className = 'w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 flex items-center justify-center shrink-0';
+                    icon.setAttribute('data-lucide', 'alert-triangle');
+                } else if (type === 'warning') {
+                    iconBg.className = 'w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0';
                     icon.setAttribute('data-lucide', 'alert-circle');
+                } else {
+                    iconBg.className = 'w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-center shrink-0';
+                    icon.setAttribute('data-lucide', 'info');
                 }
 
                 if (window.lucide) {
                     window.lucide.createIcons();
                 }
 
-                toast.classList.remove('hidden');
-                
-                if (window.anime) {
-                    window.anime({
-                        targets: toast,
-                        translateX: [300, 0],
-                        opacity: [0, 1],
-                        duration: 400,
-                        easing: 'easeOutExpo'
-                    });
+                if (toastTimeout) clearTimeout(toastTimeout);
 
-                    setTimeout(() => {
-                        window.anime({
-                            targets: toast,
-                            translateX: [0, 300],
-                            opacity: [1, 0],
-                            duration: 400,
-                            easing: 'easeInExpo',
-                            complete: () => {
-                                toast.classList.add('hidden');
-                            }
-                        });
-                    }, 4000);
-                } else {
-                    setTimeout(() => {
-                        toast.classList.add('hidden');
-                    }, 4000);
+                toast.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    toast.classList.remove('translate-y-4', 'opacity-0');
+                    toast.classList.add('translate-y-0', 'opacity-100');
+                });
+
+                toastTimeout = setTimeout(() => {
+                    hideToast();
+                }, 4000);
+            }
+
+            function setPendingToast(message, type = 'success', title = null) {
+                try {
+                    sessionStorage.setItem('pending_toast', JSON.stringify({
+                        message: message,
+                        type: type,
+                        title: title
+                    }));
+                } catch (e) {
+                    console.error('Failed to set pending toast:', e);
                 }
+            }
+
+            function checkPendingToast() {
+                try {
+                    const pending = sessionStorage.getItem('pending_toast');
+                    if (pending) {
+                        sessionStorage.removeItem('pending_toast');
+                        const data = JSON.parse(pending);
+                        if (data && data.message) {
+                            showToast(data.title || null, data.message, data.type || 'success');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to read pending toast:', e);
+                }
+            }
+
+            window.showToast = showToast;
+            window.showToastNotification = function(message, type = 'success', token = null) {
+                showToast(message, type);
+            };
+            window.setPendingToast = setPendingToast;
+            window.hideToast = hideToast;
+
+            // Check pending toast on document load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', checkPendingToast);
+            } else {
+                checkPendingToast();
             }
         </script>
 
@@ -398,6 +470,20 @@
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
                     showToast('Perhatian!', @json(session('error')), 'error');
+                });
+            </script>
+        @endif
+        @if(session('warning'))
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    showToast('Peringatan!', @json(session('warning')), 'warning');
+                });
+            </script>
+        @endif
+        @if(session('info'))
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    showToast('Informasi', @json(session('info')), 'info');
                 });
             </script>
         @endif

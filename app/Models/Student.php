@@ -53,11 +53,15 @@ class Student extends Model
         'step_siblings_count',
         'adoptive_siblings_count',
         'home_language',
+        'ethnic_group',
 
         // Kesehatan & Fisik
         'weight',
         'height',
         'blood_type',
+        'skin_color',
+        'hair_type',
+        'hair_color',
         'severe_disease_history',
         'frequent_disease',
 
@@ -75,6 +79,8 @@ class Student extends Model
         'father_company_phone',
         'father_income',
         'father_email',
+        'father_address',
+        'father_social_media',
 
         // Data Ibu
         'mother_name',
@@ -90,14 +96,23 @@ class Student extends Model
         'mother_company_phone',
         'mother_income',
         'mother_email',
+        'mother_address',
+        'mother_social_media',
 
         // Data Wali
         'guardian_name',
+        'guardian_nik',
         'guardian_relation',
         'guardian_birth_place',
         'guardian_birth_date',
         'guardian_education',
         'guardian_job',
+        'guardian_company',
+        'guardian_company_address',
+        'guardian_company_phone',
+        'guardian_income',
+        'guardian_email',
+        'guardian_social_media',
         'guardian_religion',
         'guardian_phone',
         'guardian_address',
@@ -116,7 +131,8 @@ class Student extends Model
         'documents',
         'checklist_documents',
         'status',
-        'enrolled_date',
+        'enrollment_date',
+        'enrollment_type',
         'notes',
         'graduation_year',
         'diploma_number',

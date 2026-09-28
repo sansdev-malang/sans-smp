@@ -1,4 +1,485 @@
 <x-admin-layout>
+    <!-- Alpine.js Application Logic -->
+    <script>
+        async function parseApiResponse(res) {
+            const isJson = (res.headers.get('content-type') || '').includes('application/json');
+            let data = null;
+            try {
+                data = isJson ? await res.json() : null;
+            } catch (e) {
+                data = null;
+            }
+            if (!res.ok) {
+                const errorMsg = (data && data.message) 
+                    ? data.message 
+                    : ((data && data.errors) ? Object.values(data.errors).flat().join(', ') : `Terjadi kesalahan (HTTP ${res.status}: ${res.statusText})`);
+                throw new Error(errorMsg);
+            }
+            return data || { success: true };
+        }
+
+        function spmbCandidateApp() {
+            return {
+                syncing: false,
+                modalOpen: false,
+                enrollModalOpen: false,
+                editModalOpen: false,
+                deleteModalOpen: false,
+                unenrollModalOpen: false,
+                enrolling: false,
+                editing: false,
+                deleting: false,
+                unenrolling: false,
+                selectedCandidate: null,
+                modalWaUrl: null,
+                formattedDocuments: [],
+                candidateToDelete: { id: null, name: '' },
+                unenrollCandidate: { id: null, name: '' },
+                enrollData: {
+                    candidate: null,
+                    academic_years: [],
+                    classrooms: [],
+                },
+                enrollForm: {
+                    nis: '',
+                    classroom_id: '',
+                    academic_year_id: '',
+                    enrolled_date: '{{ date("Y-m-d") }}',
+                    notes: '',
+                },
+                editForm: {
+                    id: null,
+                    full_name: '',
+                    nickname: '',
+                    gender: 'male',
+                    birth_place: '',
+                    birth_date: '',
+                    nik: '',
+                    nisn: '',
+                    student_type: 'REGULER',
+                    special_needs_type: '',
+                    target_class: 'Reguler',
+                    academic_year: '{{ $selectedYear !== "all" ? $selectedYear : date("Y") . "/" . (date("Y") + 1) }}',
+                    wave: 'Gelombang 1',
+                    father_name: '',
+                    father_phone: '',
+                    father_job: '',
+                    mother_name: '',
+                    mother_phone: '',
+                    mother_job: '',
+                    guardian_name: '',
+                    guardian_phone: '',
+                    parent_phone: '',
+                    address: '',
+                    city: '',
+                    province: '',
+                    previous_school: '',
+                    registration_status: 'verified',
+                    payment_status: 'unpaid',
+                },
+
+                syncData() {
+                    if (this.syncing) return;
+                    this.syncing = true;
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('Menyinkronkan', 'Sedang mengambil data pendaftar terbaru dari SPMB Pusat...', 'info');
+                    }
+
+                    fetch('{{ route("spmb.candidates.sync") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            period: '{{ $selectedYear }}'
+                        })
+                    })
+                    .then(parseApiResponse)
+                    .then(data => {
+                        this.syncing = false;
+                        if (data.success) {
+                            if (window.setPendingToast) {
+                                window.setPendingToast(data.message || 'Data pendaftar SPMB berhasil diperbarui.', 'success');
+                            } else if (typeof window.showToast === 'function') {
+                                window.showToast('Sinkronisasi Berhasil', data.message || 'Data pendaftar SPMB berhasil diperbarui.', 'success');
+                            }
+                            setTimeout(() => window.location.reload(), 400);
+                        } else {
+                            if (typeof window.showToast === 'function') {
+                                window.showToast('Sinkronisasi Gagal', data.message || 'Terjadi kesalahan saat mengambil data SPMB', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.syncing = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Sinkronisasi Gagal', err.message, 'error');
+                        }
+                    });
+                },
+
+                openCandidateDetail(id) {
+                    fetch(`/spmb/pendaftar/${id}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(parseApiResponse)
+                    .then(res => {
+                        if (res.success) {
+                            this.selectedCandidate = res.candidate;
+                            this.modalWaUrl = res.wa_url;
+                            this.formattedDocuments = res.candidate.formatted_documents || [];
+                            this.modalOpen = true;
+
+                            this.$nextTick(() => {
+                                if (window.lucide) lucide.createIcons();
+                            });
+                        } else {
+                            if (typeof window.showToast === 'function') {
+                                window.showToast('Gagal Memuat Detail', res.message || 'Data tidak ditemukan', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Gagal Memuat Detail', err.message, 'error');
+                        }
+                    });
+                },
+
+                openEnrollModal(id) {
+                    fetch(`/spmb/pendaftar/${id}/enroll-data`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(parseApiResponse)
+                    .then(res => {
+                        if (res.success) {
+                            this.enrollData = res;
+                            this.enrollForm.nis = res.student ? res.student.nis : res.suggested_nis;
+                            this.enrollForm.classroom_id = res.student ? res.student.classroom_id : (res.classrooms[0] ? res.classrooms[0].id : '');
+                            this.enrollForm.academic_year_id = res.student ? res.student.academic_year_id : (res.selected_year_id || (res.academic_years[0] ? res.academic_years[0].id : ''));
+                            this.enrollForm.enrolled_date = res.student && res.student.enrolled_date ? res.student.enrolled_date.substring(0, 10) : '{{ date("Y-m-d") }}';
+                            this.enrollForm.notes = res.student ? res.student.notes : '';
+                            this.enrollModalOpen = true;
+
+                            this.$nextTick(() => {
+                                if (window.lucide) lucide.createIcons();
+                            });
+                        } else {
+                            if (typeof window.showToast === 'function') {
+                                window.showToast('Gagal Memuat Alokasi', res.message || 'Terjadi kesalahan', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Gagal Memuat Alokasi', err.message, 'error');
+                        }
+                    });
+                },
+
+                getAvailableClassrooms() {
+                    if (!this.enrollData) return [];
+                    if (!this.enrollData.all_classrooms || this.enrollData.all_classrooms.length === 0) {
+                        return this.enrollData.classrooms || [];
+                    }
+                    const selectedAyId = parseInt(this.enrollForm.academic_year_id);
+                    if (!selectedAyId) return this.enrollData.all_classrooms;
+
+                    const selectedAy = (this.enrollData.academic_years || []).find(ay => ay.id === selectedAyId);
+                    const ayRawName = selectedAy ? (selectedAy.raw_name || selectedAy.name) : null;
+
+                    const matched = this.enrollData.all_classrooms.filter(r => {
+                        if (r.academic_year_id === selectedAyId) return true;
+                        if (ayRawName && r.academic_year && r.academic_year.name === ayRawName) return true;
+                        return false;
+                    });
+
+                    return matched.length > 0 ? matched : this.enrollData.all_classrooms;
+                },
+
+                onEnrollYearChange() {
+                    const selectedAyId = parseInt(this.enrollForm.academic_year_id);
+                    const selectedAy = (this.enrollData.academic_years || []).find(ay => ay.id === selectedAyId);
+                    if (selectedAy) {
+                        const rawName = selectedAy.raw_name || selectedAy.name || '2026';
+                        const yearDigits = rawName.split('/')[0].slice(-2);
+                        const prefix = `${yearDigits}.SMP.`;
+                        if (this.enrollForm.nis && (!this.enrollData.student || !this.enrollData.student.id)) {
+                            const seqMatch = this.enrollForm.nis.match(/(\d+)$/);
+                            const seq = seqMatch ? seqMatch[1] : '001';
+                            this.enrollForm.nis = prefix + seq;
+                        }
+                    }
+                    const available = this.getAvailableClassrooms();
+                    if (available.length > 0) {
+                        const stillValid = available.some(r => r.id === parseInt(this.enrollForm.classroom_id));
+                        if (!stillValid) {
+                            this.enrollForm.classroom_id = available[0].id;
+                        }
+                    }
+                },
+
+                submitEnroll() {
+                    if (this.enrolling) return;
+                    this.enrolling = true;
+
+                    const candidateId = this.enrollData.candidate.id;
+
+                    fetch(`/spmb/pendaftar/${candidateId}/enroll`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(this.enrollForm)
+                    })
+                    .then(parseApiResponse)
+                    .then(res => {
+                        this.enrolling = false;
+                        if (res.success) {
+                            this.enrollModalOpen = false;
+                            if (window.setPendingToast) {
+                                window.setPendingToast(res.message || 'Siswa berhasil resmi terdaftar sebagai Siswa Aktif!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Gagal meresmikan siswa.', 'error');
+                            } else if (typeof window.showToast === 'function') {
+                                window.showToast('Gagal Meresmikan', res.message || 'Gagal meresmikan siswa.', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.enrolling = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Gagal Meresmikan', err.message, 'error');
+                        }
+                    });
+                },
+
+                promptUnenroll(candidateId, candidateName) {
+                    this.unenrollCandidate = { id: candidateId, name: candidateName };
+                    this.unenrollModalOpen = true;
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                confirmUnenroll() {
+                    if (this.unenrolling || !this.unenrollCandidate.id) return;
+                    this.unenrolling = true;
+
+                    fetch(`/spmb/pendaftar/${this.unenrollCandidate.id}/unenroll`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(parseApiResponse)
+                    .then(res => {
+                        this.unenrolling = false;
+                        this.unenrollModalOpen = false;
+                        this.enrollModalOpen = false;
+                        if (res.success) {
+                            if (window.setPendingToast) {
+                                window.setPendingToast(res.message || 'Status siswa aktif berhasil dibatalkan.', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Gagal membatalkan status siswa aktif.', 'error');
+                            } else if (typeof window.showToast === 'function') {
+                                window.showToast('Gagal Membatalkan', res.message || 'Gagal membatalkan status siswa aktif.', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.unenrolling = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Gagal Membatalkan', err.message, 'error');
+                        }
+                    });
+                },
+
+                openEditModal(id) {
+                    fetch(`/spmb/pendaftar/${id}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(parseApiResponse)
+                    .then(res => {
+                        if (res.success && res.candidate) {
+                            const c = res.candidate;
+                            this.editForm = {
+                                id: c.id,
+                                full_name: c.full_name || '',
+                                nickname: c.nickname || '',
+                                gender: (c.gender === 'female' || c.gender === 'P') ? 'female' : 'male',
+                                birth_place: c.birth_place || '',
+                                birth_date: c.birth_date ? c.birth_date.substring(0, 10) : '',
+                                nik: c.nik || '',
+                                nisn: c.nisn || '',
+                                student_type: (c.student_type === 'PDBK' || c.student_type === 'MBK' || c.student_type === 'ABK' || c.target_class === 'MBK' || c.target_class === 'Inklusi' || c.special_needs_type) ? 'PDBK' : 'REGULER',
+                                special_needs_type: c.special_needs_type || '',
+                                target_class: c.target_class || 'Reguler',
+                                academic_year: c.academic_year || '{{ $selectedYear !== "all" ? $selectedYear : date("Y") . "/" . (date("Y") + 1) }}',
+                                wave: c.wave || 'Gelombang 1',
+                                father_name: c.father_name || '',
+                                father_phone: c.father_phone || '',
+                                father_job: c.father_job || '',
+                                mother_name: c.mother_name || '',
+                                mother_phone: c.mother_phone || '',
+                                mother_job: c.mother_job || '',
+                                guardian_name: c.guardian_name || '',
+                                guardian_phone: c.guardian_phone || '',
+                                parent_phone: c.parent_phone || '',
+                                address: c.address || '',
+                                city: c.city || '',
+                                province: c.province || '',
+                                previous_school: c.previous_school || '',
+                                registration_status: c.registration_status || c.spmb_status || 'verified',
+                                payment_status: c.payment_status || c.spmb_payment_status || 'unpaid',
+                            };
+                            this.editModalOpen = true;
+
+                            this.$nextTick(() => {
+                                if (window.lucide) lucide.createIcons();
+                            });
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Data tidak ditemukan', 'error');
+                            } else if (typeof window.showToast === 'function') {
+                                window.showToast('Gagal Memuat Data', res.message || 'Data tidak ditemukan', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Gagal Memuat Data', err.message, 'error');
+                        }
+                    });
+                },
+
+                submitEdit() {
+                    if (this.editing) return;
+                    this.editing = true;
+
+                    fetch(`/spmb/pendaftar/${this.editForm.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(this.editForm)
+                    })
+                    .then(parseApiResponse)
+                    .then(res => {
+                        this.editing = false;
+                        if (res.success) {
+                            this.editModalOpen = false;
+                            if (window.setPendingToast) {
+                                window.setPendingToast(res.message || 'Data pendaftar berhasil diperbarui!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Terjadi kesalahan saat menyimpan', 'error');
+                            } else if (typeof window.showToast === 'function') {
+                                window.showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan saat menyimpan', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.editing = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Gagal Menyimpan', err.message, 'error');
+                        }
+                    });
+                },
+
+                promptDelete(id, name) {
+                    this.candidateToDelete = { id: id, name: name };
+                    this.deleteModalOpen = true;
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                confirmDelete() {
+                    if (this.deleting || !this.candidateToDelete.id) return;
+                    this.deleting = true;
+
+                    fetch(`/spmb/pendaftar/${this.candidateToDelete.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(parseApiResponse)
+                    .then(res => {
+                        this.deleting = false;
+                        this.deleteModalOpen = false;
+                        if (res.success) {
+                            if (window.setPendingToast) {
+                                window.setPendingToast(res.message || 'Data pendaftar berhasil dihapus.', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Terjadi kesalahan saat menghapus data.', 'error');
+                            } else if (typeof window.showToast === 'function') {
+                                window.showToast('Gagal Menghapus', res.message || 'Terjadi kesalahan saat menghapus data.', 'error');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.deleting = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification(err.message, 'error');
+                        } else if (typeof window.showToast === 'function') {
+                            window.showToast('Gagal Menghapus', err.message, 'error');
+                        }
+                    });
+                }
+            };
+        }
+        window.spmbCandidateApp = spmbCandidateApp;
+        document.addEventListener('alpine:init', () => {
+            if (typeof Alpine !== 'undefined' && Alpine.data) {
+                Alpine.data('spmbCandidateApp', spmbCandidateApp);
+            }
+        });
+    </script>
+
     <div class="p-6 space-y-6" x-data="spmbCandidateApp()">
 
         <!-- HEADER / ACTION BAR -->
@@ -12,7 +493,7 @@
                         <h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 flex items-center gap-2">
                             SPMB
                             <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 font-semibold border border-emerald-200 dark:border-emerald-800">
-                                Unit SD
+                                {{ setting('unit_name', 'SMP Anak Saleh') }}
                             </span>
                         </h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Data pendaftar dan calon murid yang masuk dari sistem pendaftaran SPMB Pusat.</p>
@@ -985,433 +1466,4 @@
         </div>
 
     </div>
-
-    <!-- Alpine.js Application Logic -->
-    <script>
-        function spmbCandidateApp() {
-            return {
-                syncing: false,
-                modalOpen: false,
-                enrollModalOpen: false,
-                editModalOpen: false,
-                deleteModalOpen: false,
-                unenrollModalOpen: false,
-                enrolling: false,
-                editing: false,
-                deleting: false,
-                unenrolling: false,
-                selectedCandidate: null,
-                modalWaUrl: null,
-                formattedDocuments: [],
-                candidateToDelete: { id: null, name: '' },
-                unenrollCandidate: { id: null, name: '' },
-                enrollData: {
-                    candidate: null,
-                    academic_years: [],
-                    classrooms: [],
-                },
-                enrollForm: {
-                    nis: '',
-                    classroom_id: '',
-                    academic_year_id: '',
-                    enrolled_date: '{{ date("Y-m-d") }}',
-                    notes: '',
-                },
-                editForm: {
-                    id: null,
-                    full_name: '',
-                    nickname: '',
-                    gender: 'male',
-                    birth_place: '',
-                    birth_date: '',
-                    nik: '',
-                    nisn: '',
-                    student_type: 'REGULER',
-                    special_needs_type: '',
-                    target_class: 'Reguler',
-                    academic_year: '{{ $selectedYear !== "all" ? $selectedYear : date("Y") . "/" . (date("Y") + 1) }}',
-                    wave: 'Gelombang 1',
-                    father_name: '',
-                    father_phone: '',
-                    father_job: '',
-                    mother_name: '',
-                    mother_phone: '',
-                    mother_job: '',
-                    guardian_name: '',
-                    guardian_phone: '',
-                    parent_phone: '',
-                    address: '',
-                    city: '',
-                    province: '',
-                    previous_school: '',
-                    registration_status: 'verified',
-                    payment_status: 'unpaid',
-                },
-
-                syncData() {
-                    if (this.syncing) return;
-                    this.syncing = true;
-                    if (typeof window.showToast === 'function') {
-                        window.showToast('Menyinkronkan', 'Sedang mengambil data pendaftar terbaru dari SPMB Pusat...', 'info');
-                    }
-
-                    fetch('{{ route("spmb.candidates.sync") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            period: '{{ $selectedYear }}'
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        this.syncing = false;
-                        if (data.success) {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Sinkronisasi Berhasil', data.message || 'Data pendaftar SPMB berhasil diperbarui.', 'success');
-                            }
-                            setTimeout(() => window.location.reload(), 600);
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Sinkronisasi Gagal', data.message || 'Terjadi kesalahan saat mengambil data SPMB', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.syncing = false;
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Kesalahan Jaringan', err.message, 'error');
-                        }
-                    });
-                },
-
-                openCandidateDetail(id) {
-                    fetch(`/spmb/pendaftar/${id}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            this.selectedCandidate = res.candidate;
-                            this.modalWaUrl = res.wa_url;
-                            this.formattedDocuments = res.candidate.formatted_documents || [];
-                            this.modalOpen = true;
-
-                            this.$nextTick(() => {
-                                if (window.lucide) lucide.createIcons();
-                            });
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Gagal Memuat Detail', res.message || 'Data tidak ditemukan', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Gagal Memuat Detail', err.message, 'error');
-                        }
-                    });
-                },
-
-                openEnrollModal(id) {
-                    fetch(`/spmb/pendaftar/${id}/enroll-data`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            this.enrollData = res;
-                            this.enrollForm.nis = res.student ? res.student.nis : res.suggested_nis;
-                            this.enrollForm.classroom_id = res.student ? res.student.classroom_id : (res.classrooms[0] ? res.classrooms[0].id : '');
-                            this.enrollForm.academic_year_id = res.student ? res.student.academic_year_id : res.selected_year_id;
-                            this.enrollForm.enrolled_date = res.student && res.student.enrolled_date ? res.student.enrolled_date.substring(0, 10) : '{{ date("Y-m-d") }}';
-                            this.enrollModalOpen = true;
-
-                            this.$nextTick(() => {
-                                if (window.lucide) lucide.createIcons();
-                            });
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Gagal Memuat Alokasi', res.message || 'Terjadi kesalahan', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Gagal Memuat Alokasi', err.message, 'error');
-                        }
-                    });
-                },
-
-                getAvailableClassrooms() {
-                    if (!this.enrollData) return [];
-                    if (!this.enrollData.all_classrooms || this.enrollData.all_classrooms.length === 0) {
-                        return this.enrollData.classrooms || [];
-                    }
-                    const selectedAyId = parseInt(this.enrollForm.academic_year_id);
-                    if (!selectedAyId) return this.enrollData.all_classrooms;
-
-                    const selectedAy = (this.enrollData.academic_years || []).find(ay => ay.id === selectedAyId);
-                    const ayRawName = selectedAy ? (selectedAy.raw_name || selectedAy.name) : null;
-
-                    const matched = this.enrollData.all_classrooms.filter(r => {
-                        if (r.academic_year_id === selectedAyId) return true;
-                        if (ayRawName && r.academic_year && r.academic_year.name === ayRawName) return true;
-                        return false;
-                    });
-
-                    return matched.length > 0 ? matched : this.enrollData.all_classrooms;
-                },
-
-                onEnrollYearChange() {
-                    const selectedAyId = parseInt(this.enrollForm.academic_year_id);
-                    const selectedAy = (this.enrollData.academic_years || []).find(ay => ay.id === selectedAyId);
-                    if (selectedAy) {
-                        const rawName = selectedAy.raw_name || selectedAy.name || '2026';
-                        const yearDigits = rawName.split('/')[0].slice(-2);
-                        const prefix = `${yearDigits}.SD.`;
-                        if (this.enrollForm.nis && (!this.enrollData.student || !this.enrollData.student.id)) {
-                            const seqMatch = this.enrollForm.nis.match(/(\d+)$/);
-                            const seq = seqMatch ? seqMatch[1] : '001';
-                            this.enrollForm.nis = prefix + seq;
-                        }
-                    }
-                    const available = this.getAvailableClassrooms();
-                    if (available.length > 0) {
-                        const stillValid = available.some(r => r.id === parseInt(this.enrollForm.classroom_id));
-                        if (!stillValid) {
-                            this.enrollForm.classroom_id = available[0].id;
-                        }
-                    }
-                },
-
-                submitEnroll() {
-                    if (this.enrolling) return;
-                    this.enrolling = true;
-
-                    const candidateId = this.enrollData.candidate.id;
-
-                    fetch(`/spmb/pendaftar/${candidateId}/enroll`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(this.enrollForm)
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        this.enrolling = false;
-                        if (res.success) {
-                            this.enrollModalOpen = false;
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Siswa Diresmikan', res.message || 'Siswa berhasil resmi terdaftar sebagai Siswa Aktif!', 'success');
-                            }
-                            setTimeout(() => window.location.reload(), 600);
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Gagal Meresmikan', res.message || 'Gagal meresmikan siswa.', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.enrolling = false;
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Kesalahan Jaringan', err.message, 'error');
-                        }
-                    });
-                },
-
-                promptUnenroll(candidateId, candidateName) {
-                    this.unenrollCandidate = { id: candidateId, name: candidateName };
-                    this.unenrollModalOpen = true;
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                confirmUnenroll() {
-                    if (this.unenrolling || !this.unenrollCandidate.id) return;
-                    this.unenrolling = true;
-
-                    fetch(`/spmb/pendaftar/${this.unenrollCandidate.id}/unenroll`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        this.unenrolling = false;
-                        this.unenrollModalOpen = false;
-                        this.enrollModalOpen = false;
-                        if (res.success) {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Status Dibatalkan', res.message, 'success');
-                            }
-                            setTimeout(() => window.location.reload(), 600);
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Gagal Membatalkan', res.message || 'Gagal membatalkan status siswa aktif.', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.unenrolling = false;
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Kesalahan Jaringan', err.message, 'error');
-                        }
-                    });
-                },
-
-                openEditModal(id) {
-                    fetch(`/spmb/pendaftar/${id}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success && res.candidate) {
-                            const c = res.candidate;
-                            this.editForm = {
-                                id: c.id,
-                                full_name: c.full_name || '',
-                                nickname: c.nickname || '',
-                                gender: (c.gender === 'female' || c.gender === 'P') ? 'female' : 'male',
-                                birth_place: c.birth_place || '',
-                                birth_date: c.birth_date ? c.birth_date.substring(0, 10) : '',
-                                nik: c.nik || '',
-                                nisn: c.nisn || '',
-                                student_type: (c.student_type === 'PDBK' || c.student_type === 'MBK' || c.student_type === 'ABK' || c.target_class === 'MBK' || c.target_class === 'Inklusi' || c.special_needs_type) ? 'PDBK' : 'REGULER',
-                                special_needs_type: c.special_needs_type || '',
-                                target_class: c.target_class || 'Reguler',
-                                academic_year: c.academic_year || '{{ $selectedYear !== "all" ? $selectedYear : date("Y") . "/" . (date("Y") + 1) }}',
-                                wave: c.wave || 'Gelombang 1',
-                                father_name: c.father_name || '',
-                                father_phone: c.father_phone || '',
-                                father_job: c.father_job || '',
-                                mother_name: c.mother_name || '',
-                                mother_phone: c.mother_phone || '',
-                                mother_job: c.mother_job || '',
-                                guardian_name: c.guardian_name || '',
-                                guardian_phone: c.guardian_phone || '',
-                                parent_phone: c.parent_phone || '',
-                                address: c.address || '',
-                                city: c.city || '',
-                                province: c.province || '',
-                                previous_school: c.previous_school || '',
-                                registration_status: c.registration_status || c.spmb_status || 'verified',
-                                payment_status: c.payment_status || c.spmb_payment_status || 'unpaid',
-                            };
-                            this.editModalOpen = true;
-
-                            this.$nextTick(() => {
-                                if (window.lucide) lucide.createIcons();
-                            });
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Gagal Memuat Data', res.message || 'Data tidak ditemukan', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Gagal Memuat Data', err.message, 'error');
-                        }
-                    });
-                },
-
-                submitEdit() {
-                    if (this.editing) return;
-                    this.editing = true;
-
-                    fetch(`/spmb/pendaftar/${this.editForm.id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(this.editForm)
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        this.editing = false;
-                        if (res.success) {
-                            this.editModalOpen = false;
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Data Diperbarui', res.message || 'Data pendaftar berhasil diperbarui!', 'success');
-                            }
-                            setTimeout(() => window.location.reload(), 600);
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan saat menyimpan', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.editing = false;
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Kesalahan Jaringan', err.message, 'error');
-                        }
-                    });
-                },
-
-                promptDelete(id, name) {
-                    this.candidateToDelete = { id: id, name: name };
-                    this.deleteModalOpen = true;
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                confirmDelete() {
-                    if (this.deleting || !this.candidateToDelete.id) return;
-                    this.deleting = true;
-
-                    fetch(`/spmb/pendaftar/${this.candidateToDelete.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        this.deleting = false;
-                        this.deleteModalOpen = false;
-                        if (res.success) {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Data Dihapus', res.message || 'Data pendaftar berhasil dihapus.', 'success');
-                            }
-                            setTimeout(() => window.location.reload(), 600);
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast('Gagal Menghapus', res.message || 'Terjadi kesalahan saat menghapus data.', 'error');
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.deleting = false;
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Kesalahan Jaringan', err.message, 'error');
-                        }
-                    });
-                }
-            }
-        }
-    </script>
 </x-admin-layout>

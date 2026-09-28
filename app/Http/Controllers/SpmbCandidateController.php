@@ -6,9 +6,14 @@ use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\SpmbCandidate;
 use App\Models\Student;
+use App\Models\StudentClassroomHistory;
 use App\Services\SpmbIntegrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class SpmbCandidateController extends Controller
 {
@@ -94,8 +99,8 @@ class SpmbCandidateController extends Controller
             });
         }
 
-        $statusCol = \Illuminate\Support\Facades\Schema::hasColumn('spmb_candidates', 'registration_status') ? 'registration_status' : 'spmb_status';
-        $paymentCol = \Illuminate\Support\Facades\Schema::hasColumn('spmb_candidates', 'payment_status') ? 'payment_status' : 'spmb_payment_status';
+        $statusCol = Schema::hasColumn('spmb_candidates', 'registration_status') ? 'registration_status' : 'spmb_status';
+        $paymentCol = Schema::hasColumn('spmb_candidates', 'payment_status') ? 'payment_status' : 'spmb_payment_status';
 
         // Status Filter
         if ($status = $request->get('status')) {
@@ -155,7 +160,9 @@ class SpmbCandidateController extends Controller
             'total' => (clone $statsQuery)->count(),
             'verified' => (clone $statsQuery)->whereIn($statusCol, ['verified', 'accepted', 'diterima', 'terverifikasi'])->count(),
             'paid' => (clone $statsQuery)->whereIn($paymentCol, ['paid', 'lunas', 'settlement', 'success'])->count(),
-            'enrolled' => (clone $statsQuery)->where('is_enrolled', true)->count(),
+            'enrolled' => (clone $statsQuery)->where(function($q) {
+                $q->where('is_enrolled', true)->orWhere('is_active_student', true);
+            })->count(),
         ];
 
         // 4. Get available waves for filter dropdown
@@ -189,12 +196,113 @@ class SpmbCandidateController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $candidate = SpmbCandidate::with('student.classroom.classLevel')->findOrFail($id);
-        return response()->json([
-            'success' => true,
-            'candidate' => $candidate,
-            'wa_url' => $candidate->whatsapp_url,
-        ]);
+        try {
+            $candidate = SpmbCandidate::with('student.classroom.classLevel')->findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'candidate' => $candidate,
+                'wa_url' => $candidate->whatsapp_url,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data calon pendaftar tidak ditemukan: ' . $e->getMessage(),
+            ], 404);
+        }
+    }
+
+    /**
+     * Store a newly created candidate manually.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'full_name' => 'required|string|max:255',
+                'nickname' => 'nullable|string|max:100',
+                'gender' => 'nullable|string|in:male,female,L,P,Laki-laki,Perempuan',
+                'birth_place' => 'nullable|string|max:100',
+                'birth_date' => 'nullable|date',
+                'nik' => 'nullable|string|max:30',
+                'nisn' => 'nullable|string|max:30',
+                'student_type' => 'nullable|string|max:50',
+                'special_needs_type' => 'nullable|string|max:255',
+                'target_class' => 'nullable|string|max:100',
+                'academic_year' => 'nullable|string|max:50',
+                'wave' => 'nullable|string|max:100',
+                'father_name' => 'nullable|string|max:255',
+                'father_phone' => 'nullable|string|max:50',
+                'father_job' => 'nullable|string|max:100',
+                'mother_name' => 'nullable|string|max:255',
+                'mother_phone' => 'nullable|string|max:50',
+                'mother_job' => 'nullable|string|max:100',
+                'guardian_name' => 'nullable|string|max:255',
+                'guardian_phone' => 'nullable|string|max:50',
+                'parent_phone' => 'nullable|string|max:50',
+                'address' => 'nullable|string',
+                'city' => 'nullable|string|max:100',
+                'province' => 'nullable|string|max:100',
+                'previous_school' => 'nullable|string|max:255',
+                'spmb_status' => 'nullable|string|max:50',
+                'registration_status' => 'nullable|string|max:50',
+                'spmb_payment_status' => 'nullable|string|max:50',
+                'payment_status' => 'nullable|string|max:50',
+            ]);
+
+            // Normalize student_type
+            if ($request->has('student_type')) {
+                $stUpper = strtoupper(trim((string)$request->input('student_type')));
+                $validated['student_type'] = (str_contains($stUpper, 'PDBK') || str_contains($stUpper, 'MBK') || str_contains($stUpper, 'ABK') || str_contains($stUpper, 'INKLUSI')) ? 'PDBK' : 'REGULER';
+            }
+
+            // Normalize gender
+            if (!empty($validated['gender'])) {
+                $g = strtolower($validated['gender']);
+                if (in_array($g, ['l', 'laki-laki', 'male'])) {
+                    $validated['gender'] = 'male';
+                } elseif (in_array($g, ['p', 'perempuan', 'female'])) {
+                    $validated['gender'] = 'female';
+                }
+            }
+
+            // Generate registration number if empty
+            if (empty($validated['registration_number'])) {
+                $yearPart = date('y');
+                $randomSeq = str_pad((string)rand(1, 9999), 4, '0', STR_PAD_LEFT);
+                $validated['registration_number'] = "SPMB-{$yearPart}-{$randomSeq}";
+            }
+
+            $hasRegStatus = Schema::hasColumn('spmb_candidates', 'registration_status');
+            $hasSpmbStatus = Schema::hasColumn('spmb_candidates', 'spmb_status');
+            $statusVal = $request->input('registration_status', $request->input('spmb_status', 'verified'));
+            if ($hasRegStatus) $validated['registration_status'] = $statusVal;
+            if ($hasSpmbStatus) $validated['spmb_status'] = $statusVal;
+
+            $hasPayStatus = Schema::hasColumn('spmb_candidates', 'payment_status');
+            $hasSpmbPayStatus = Schema::hasColumn('spmb_candidates', 'spmb_payment_status');
+            $payVal = $request->input('payment_status', $request->input('spmb_payment_status', 'unpaid'));
+            if ($hasPayStatus) $validated['payment_status'] = $payVal;
+            if ($hasSpmbPayStatus) $validated['spmb_payment_status'] = $payVal;
+
+            $candidate = SpmbCandidate::create($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Calon pendaftar {$candidate->full_name} berhasil ditambahkan.",
+                'candidate' => $candidate,
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal: ' . implode(', ', array_map(fn($v) => implode(' ', $v), $e->errors())),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan pendaftar: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -202,17 +310,24 @@ class SpmbCandidateController extends Controller
      */
     public function sync(Request $request): JsonResponse
     {
-        $filters = [];
-        if ($request->filled('period') && $request->period !== 'all') {
-            $filters['period'] = $request->period;
-        }
-        if ($request->filled('status') && $request->status !== 'all') {
-            $filters['status'] = $request->status;
-        }
+        try {
+            $filters = [];
+            if ($request->filled('period') && $request->period !== 'all') {
+                $filters['period'] = $request->period;
+            }
+            if ($request->filled('status') && $request->status !== 'all') {
+                $filters['status'] = $request->status;
+            }
 
-        $result = $this->service->syncCandidates($filters);
+            $result = $this->service->syncCandidates($filters);
 
-        return response()->json($result, $result['success'] ? 200 : 400);
+            return response()->json($result, $result['success'] ? 200 : 400);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal sinkronisasi data SPMB: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -220,8 +335,15 @@ class SpmbCandidateController extends Controller
      */
     public function testConnection(): JsonResponse
     {
-        $result = $this->service->testConnection();
-        return response()->json($result, $result['success'] ? 200 : 400);
+        try {
+            $result = $this->service->testConnection();
+            return response()->json($result, $result['success'] ? 200 : 400);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menguji koneksi: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -229,80 +351,91 @@ class SpmbCandidateController extends Controller
      */
     public function getEnrollData($id): JsonResponse
     {
-        $candidate = SpmbCandidate::with('student.classroom')->findOrFail($id);
+        try {
+            $candidate = SpmbCandidate::with('student.classroom')->findOrFail($id);
 
-        $academicYears = AcademicYear::orderBy('name', 'desc')->orderBy('semester', 'asc')->get();
+            $academicYears = AcademicYear::orderBy('name', 'desc')->orderBy('semester', 'asc')->get();
 
-        // Match academic year from candidate's period
-        $matchedYear = null;
-        if ($candidate->academic_year) {
-            $cleanYear = str_replace('-', '/', $candidate->academic_year);
-            $matchedYear = AcademicYear::where('name', $cleanYear)->first();
+            // Match academic year from candidate's period
+            $matchedYear = null;
+            if ($candidate->academic_year) {
+                $cleanYear = str_replace('-', '/', $candidate->academic_year);
+                $matchedYear = AcademicYear::where('name', $cleanYear)->first();
+            }
+            if (!$matchedYear) {
+                $matchedYear = AcademicYear::where('is_active', true)->first();
+            }
+
+            // Unique yearly academic years for enrollment selector
+            $uniqueYears = $academicYears->groupBy('name')->map(function ($group) {
+                $activeInGroup = $group->firstWhere('is_active', true);
+                $chosen = $activeInGroup ?: $group->first();
+                return [
+                    'id' => $chosen->id,
+                    'name' => $chosen->name . ($activeInGroup ? ' (Aktif)' : ''),
+                    'raw_name' => $chosen->name,
+                    'is_active' => (bool) $activeInGroup,
+                ];
+            })->values();
+
+            // Matching academic year IDs (all semesters for that annual year)
+            $matchingYearIds = $matchedYear ? $academicYears->where('name', $matchedYear->name)->pluck('id')->toArray() : [];
+
+            // Get active classrooms
+            $classrooms = Classroom::with(['classLevel', 'homeroomTeacher', 'academicYear'])
+                ->withCount(['students as active_students_count' => function ($q) {
+                    $q->where('status', 'aktif');
+                }])
+                ->where('classrooms.is_active', true)
+                ->join('class_levels', 'classrooms.class_level_id', '=', 'class_levels.id')
+                ->orderBy('class_levels.order', 'asc')
+                ->orderBy('classrooms.code', 'asc')
+                ->orderBy('classrooms.name', 'asc')
+                ->select('classrooms.*')
+                ->get();
+
+            // Filter classrooms for the matched academic year if available
+            $matchedClassrooms = $classrooms->filter(function($cr) use ($matchingYearIds) {
+                return empty($matchingYearIds) || in_array($cr->academic_year_id, $matchingYearIds);
+            })->values();
+
+            // If no classrooms matched for future year, fallback to all active classrooms
+            $finalClassrooms = $matchedClassrooms->isNotEmpty() ? $matchedClassrooms : $classrooms;
+
+            // Generate suggested NIS for SMP (e.g. 26.SMP.001)
+            $yearDigits = $matchedYear ? substr(explode('/', $matchedYear->name)[0] ?? '2026', -2) : date('y');
+            $unitSlug = function_exists('setting') ? strtoupper((string)setting('school_unit', 'smp')) : 'SMP';
+            if (!in_array($unitSlug, ['SD', 'SMP', 'PAUD', 'SMA', 'SMK'])) {
+                $unitSlug = 'SMP';
+            }
+            $prefix = "{$yearDigits}.{$unitSlug}.";
+
+            $latestStudent = Student::where('nis', 'like', "{$prefix}%")
+                ->orderBy('nis', 'desc')
+                ->first();
+
+            $nextSeq = 1;
+            if ($latestStudent && preg_match('/(\d+)$/', $latestStudent->nis, $matches)) {
+                $nextSeq = intval($matches[1]) + 1;
+            }
+            $suggestedNis = $prefix . str_pad((string)$nextSeq, 3, '0', STR_PAD_LEFT);
+
+            return response()->json([
+                'success' => true,
+                'candidate' => $candidate,
+                'student' => $candidate->student,
+                'suggested_nis' => $suggestedNis,
+                'academic_years' => $uniqueYears,
+                'selected_year_id' => $matchedYear?->id,
+                'classrooms' => $finalClassrooms,
+                'all_classrooms' => $classrooms,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat alokasi kelas pendaftar: ' . $e->getMessage(),
+            ], 500);
         }
-        if (!$matchedYear) {
-            $matchedYear = AcademicYear::where('is_active', true)->first();
-        }
-
-        // Unique yearly academic years for enrollment selector
-        $uniqueYears = $academicYears->groupBy('name')->map(function ($group) {
-            $activeInGroup = $group->firstWhere('is_active', true);
-            $chosen = $activeInGroup ?: $group->first();
-            return [
-                'id' => $chosen->id,
-                'name' => $chosen->name . ($activeInGroup ? ' (Aktif)' : ''),
-                'raw_name' => $chosen->name,
-                'is_active' => (bool) $activeInGroup,
-            ];
-        })->values();
-
-        // Matching academic year IDs (all semesters for that annual year)
-        $matchingYearIds = $matchedYear ? $academicYears->where('name', $matchedYear->name)->pluck('id')->toArray() : [];
-
-        // Get active classrooms (including all classrooms with academic_year_id for dynamic client-side filtering)
-        $classrooms = Classroom::with(['classLevel', 'homeroomTeacher', 'academicYear'])
-            ->withCount(['students as active_students_count' => function ($q) {
-                $q->where('status', 'aktif');
-            }])
-            ->where('classrooms.is_active', true)
-            ->join('class_levels', 'classrooms.class_level_id', '=', 'class_levels.id')
-            ->orderBy('class_levels.order', 'asc')
-            ->orderBy('classrooms.code', 'asc')
-            ->orderBy('classrooms.name', 'asc')
-            ->select('classrooms.*')
-            ->get();
-
-        // Filter classrooms for the matched academic year if available
-        $matchedClassrooms = $classrooms->filter(function($cr) use ($matchingYearIds) {
-            return empty($matchingYearIds) || in_array($cr->academic_year_id, $matchingYearIds);
-        })->values();
-
-        // If no classrooms matched for future year, fallback to all active classrooms
-        $finalClassrooms = $matchedClassrooms->isNotEmpty() ? $matchedClassrooms : $classrooms;
-
-        // Generate suggested NIS for SD (e.g. 26.SD.001 or 27.SD.001)
-        $yearDigits = $matchedYear ? substr(explode('/', $matchedYear->name)[0] ?? '2026', -2) : date('y');
-        $prefix = "{$yearDigits}.SD.";
-
-        $latestStudent = Student::where('nis', 'like', "{$prefix}%")
-            ->orderBy('nis', 'desc')
-            ->first();
-
-        $nextSeq = 1;
-        if ($latestStudent && preg_match('/(\d+)$/', $latestStudent->nis, $matches)) {
-            $nextSeq = intval($matches[1]) + 1;
-        }
-        $suggestedNis = $prefix . str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
-
-        return response()->json([
-            'success' => true,
-            'candidate' => $candidate,
-            'student' => $candidate->student,
-            'suggested_nis' => $suggestedNis,
-            'academic_years' => $uniqueYears,
-            'selected_year_id' => $matchedYear?->id,
-            'classrooms' => $finalClassrooms,
-            'all_classrooms' => $classrooms,
-        ]);
     }
 
     /**
@@ -310,105 +443,131 @@ class SpmbCandidateController extends Controller
      */
     public function enroll(Request $request, $id): JsonResponse
     {
-        $candidate = SpmbCandidate::findOrFail($id);
+        try {
+            $candidate = SpmbCandidate::findOrFail($id);
 
-        $validated = $request->validate([
-            'nis' => 'required|string|max:50|unique:students,nis,' . ($candidate->student_id ?? 'NULL'),
-            'classroom_id' => 'required|exists:classrooms,id',
-            'academic_year_id' => 'required|exists:academic_years,id',
-            'enrolled_date' => 'nullable|date',
-            'notes' => 'nullable|string',
-        ]);
+            $validated = $request->validate([
+                'nis' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    Rule::unique('students', 'nis')->ignore($candidate->student_id),
+                ],
+                'classroom_id' => 'required|exists:classrooms,id',
+                'academic_year_id' => 'required|exists:academic_years,id',
+                'enrolled_date' => 'nullable|date',
+                'notes' => 'nullable|string',
+            ]);
 
-        $studentData = [
-            'nis' => $validated['nis'],
-            'nisn' => $candidate->nisn,
-            'nik' => $candidate->nik,
-            'no_kk' => $candidate->no_kk,
-            'spmb_candidate_id' => $candidate->id,
-            'classroom_id' => $validated['classroom_id'],
-            'academic_year_id' => $validated['academic_year_id'],
-            'full_name' => $candidate->full_name,
-            'nickname' => $candidate->nickname,
-            'gender' => in_array(strtolower((string)$candidate->gender), ['female', 'p', 'perempuan']) ? 'P' : 'L',
-            'student_type' => $candidate->student_type ?? 'REGULER',
-            'special_needs_type' => $candidate->special_needs_type,
-            'birth_place' => $candidate->birth_place,
-            'birth_date' => $candidate->birth_date,
-            'religion' => $candidate->religion ?: 'Islam',
-            'address' => $candidate->address,
-            'rt' => $candidate->rt,
-            'rw' => $candidate->rw,
-            'village' => $candidate->village,
-            'district' => $candidate->district,
-            'city' => $candidate->city,
-            'province' => $candidate->province,
-            'postal_code' => $candidate->postal_code,
-            'child_number' => $candidate->child_number,
-            'siblings_count' => $candidate->siblings_count,
-            'blood_type' => $candidate->blood_type,
-            'weight' => $candidate->weight,
-            'height' => $candidate->height,
-            'previous_school' => $candidate->previous_school,
-            'previous_school_address' => $candidate->previous_school_address,
-            'student_photo_url' => $candidate->student_photo_url,
-            'father_name' => $candidate->father_name,
-            'father_nik' => $candidate->father_nik,
-            'father_phone' => $candidate->father_phone,
-            'father_job' => $candidate->father_job,
-            'father_education' => $candidate->father_education,
-            'mother_name' => $candidate->mother_name,
-            'mother_nik' => $candidate->mother_nik,
-            'mother_phone' => $candidate->mother_phone,
-            'mother_job' => $candidate->mother_job,
-            'mother_education' => $candidate->mother_education,
-            'guardian_name' => $candidate->guardian_name,
-            'guardian_phone' => $candidate->guardian_phone,
-            'parent_phone' => $candidate->parent_phone,
-            'parent_email' => $candidate->parent_email,
-            'documents' => $candidate->documents,
-            'status' => 'aktif',
-            'enrolled_date' => $validated['enrolled_date'] ?? now()->toDateString(),
-            'notes' => $validated['notes'] ?? "Terdaftar via integrasi SPMB ({$candidate->registration_number})",
-        ];
+            return DB::transaction(function () use ($candidate, $validated) {
+                $classroom = Classroom::with(['classLevel', 'homeroomTeacher'])->find($validated['classroom_id']);
 
-        if ($candidate->student_id && $existingStudent = Student::find($candidate->student_id)) {
-            $existingStudent->update($studentData);
-            $student = $existingStudent;
-        } else {
-            $student = Student::create($studentData);
+                $studentData = [
+                    'nis' => $validated['nis'],
+                    'nisn' => $candidate->nisn,
+                    'nik' => $candidate->nik,
+                    'no_kk' => $candidate->no_kk,
+                    'spmb_candidate_id' => $candidate->id,
+                    'classroom_id' => $validated['classroom_id'],
+                    'class_level_id' => $classroom?->class_level_id,
+                    'academic_year_id' => $validated['academic_year_id'],
+                    'full_name' => $candidate->full_name,
+                    'nickname' => $candidate->nickname,
+                    'gender' => in_array(strtolower((string)$candidate->gender), ['female', 'p', 'perempuan']) ? 'P' : 'L',
+                    'student_type' => $candidate->student_type ?? 'REGULER',
+                    'special_needs_type' => $candidate->special_needs_type,
+                    'birth_place' => $candidate->birth_place,
+                    'birth_date' => $candidate->birth_date,
+                    'religion' => $candidate->religion ?: 'Islam',
+                    'address' => $candidate->address,
+                    'rt' => $candidate->rt,
+                    'rw' => $candidate->rw,
+                    'village' => $candidate->village,
+                    'district' => $candidate->district,
+                    'city' => $candidate->city,
+                    'province' => $candidate->province,
+                    'postal_code' => $candidate->postal_code,
+                    'child_number' => $candidate->child_number,
+                    'siblings_count' => $candidate->siblings_count,
+                    'blood_type' => $candidate->blood_type,
+                    'weight' => $candidate->weight,
+                    'height' => $candidate->height,
+                    'previous_school' => $candidate->previous_school,
+                    'previous_school_address' => $candidate->previous_school_address,
+                    'student_photo_url' => $candidate->student_photo_url,
+                    'father_name' => $candidate->father_name,
+                    'father_nik' => $candidate->father_nik,
+                    'father_phone' => $candidate->father_phone,
+                    'father_job' => $candidate->father_job,
+                    'father_education' => $candidate->father_education,
+                    'mother_name' => $candidate->mother_name,
+                    'mother_nik' => $candidate->mother_nik,
+                    'mother_phone' => $candidate->mother_phone,
+                    'mother_job' => $candidate->mother_job,
+                    'mother_education' => $candidate->mother_education,
+                    'guardian_name' => $candidate->guardian_name,
+                    'guardian_phone' => $candidate->guardian_phone,
+                    'parent_phone' => $candidate->parent_phone,
+                    'parent_email' => $candidate->parent_email,
+                    'documents' => $candidate->documents,
+                    'status' => 'aktif',
+                    'enrollment_type' => 'spmb',
+                    'enrollment_date' => $validated['enrolled_date'] ?? now()->toDateString(),
+                    'notes' => $validated['notes'] ?? "Terdaftar via integrasi SPMB ({$candidate->registration_number})",
+                ];
+
+                if ($candidate->student_id && ($existingStudent = Student::find($candidate->student_id))) {
+                    $existingStudent->update($studentData);
+                    $student = $existingStudent;
+                } else {
+                    $student = Student::create($studentData);
+                }
+
+                $candidate->is_enrolled = true;
+                $candidate->is_active_student = true;
+                $candidate->enrolled_at = now();
+                $candidate->activated_at = now();
+                $candidate->student_id = $student->id;
+                $candidate->save();
+
+                // Rekam riwayat rombel / enrollment history
+                $student->load(['classroom.classLevel', 'classroom.homeroomTeacher']);
+                StudentClassroomHistory::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'academic_year_id' => $validated['academic_year_id'],
+                    ],
+                    [
+                        'classroom_id' => $validated['classroom_id'],
+                        'classroom_name' => $student->classroom ? $student->classroom->name : ($classroom ? $classroom->name : null),
+                        'grade_level' => $student->classroom && $student->classroom->classLevel ? $student->classroom->classLevel->name : ($classroom && $classroom->classLevel ? $classroom->classLevel->name : '7'),
+                        'homeroom_teacher_name' => $student->classroom && $student->classroom->homeroomTeacher ? $student->classroom->homeroomTeacher->name : ($classroom && $classroom->homeroomTeacher ? $classroom->homeroomTeacher->name : null),
+                        'status' => 'aktif',
+                        'start_date' => $validated['enrolled_date'] ?? now()->toDateString(),
+                        'notes' => 'Penerimaan Siswa Baru SPMB',
+                    ]
+                );
+
+                $unitName = function_exists('setting') ? setting('unit_name', 'SMP Anak Saleh') : 'SMP Anak Saleh';
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Ananda {$candidate->full_name} berhasil resmi terdaftar sebagai Siswa Aktif {$unitName} (NIS: {$student->nis}).",
+                    'student' => $student,
+                ]);
+            });
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal: ' . implode(', ', array_map(fn($v) => implode(' ', $v), $e->errors())),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal meresmikan siswa aktif: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $candidate->is_enrolled = true;
-        $candidate->enrolled_at = now();
-        $candidate->student_id = $student->id;
-        $candidate->save();
-
-        // Rekam riwayat rombel / enrollment history
-        $student->load(['classroom.classLevel', 'classroom.homeroomTeacher']);
-        \App\Models\StudentClassroomHistory::updateOrCreate(
-            [
-                'student_id' => $student->id,
-                'academic_year_id' => $validated['academic_year_id'],
-            ],
-            [
-                'classroom_id' => $validated['classroom_id'],
-                'classroom_name' => $student->classroom ? $student->classroom->name : null,
-                'grade_level' => $student->classroom && $student->classroom->classLevel ? $student->classroom->classLevel->name : '1',
-                'homeroom_teacher_name' => $student->classroom && $student->classroom->homeroomTeacher ? $student->classroom->homeroomTeacher->name : null,
-                'status' => 'aktif',
-                'start_date' => $validated['enrolled_date'] ?? now()->toDateString(),
-                'notes' => 'Penerimaan Siswa Baru SPMB',
-            ]
-        );
-
-        $unitName = function_exists('setting') ? setting('unit_name', 'SMP Anak Saleh') : 'SMP Anak Saleh';
-
-        return response()->json([
-            'success' => true,
-            'message' => "Ananda {$candidate->full_name} berhasil resmi terdaftar sebagai Siswa Aktif {$unitName} (NIS: {$student->nis}).",
-            'student' => $student,
-        ]);
     }
 
     /**
@@ -416,24 +575,36 @@ class SpmbCandidateController extends Controller
      */
     public function unenroll($id): JsonResponse
     {
-        $candidate = SpmbCandidate::findOrFail($id);
+        try {
+            $candidate = SpmbCandidate::findOrFail($id);
 
-        if ($candidate->student_id) {
-            $student = Student::find($candidate->student_id);
-            if ($student) {
-                $student->delete();
-            }
+            return DB::transaction(function () use ($candidate) {
+                if ($candidate->student_id) {
+                    $student = Student::find($candidate->student_id);
+                    if ($student) {
+                        StudentClassroomHistory::where('student_id', $student->id)->delete();
+                        $student->delete();
+                    }
+                }
+
+                $candidate->is_enrolled = false;
+                $candidate->is_active_student = false;
+                $candidate->enrolled_at = null;
+                $candidate->activated_at = null;
+                $candidate->student_id = null;
+                $candidate->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Status Siswa Aktif untuk {$candidate->full_name} berhasil dibatalkan.",
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membatalkan status siswa aktif: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $candidate->is_enrolled = false;
-        $candidate->enrolled_at = null;
-        $candidate->student_id = null;
-        $candidate->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => "Status Siswa Aktif untuk {$candidate->full_name} berhasil dibatalkan.",
-        ]);
     }
 
     /**
@@ -441,107 +612,122 @@ class SpmbCandidateController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        $candidate = SpmbCandidate::findOrFail($id);
+        try {
+            $candidate = SpmbCandidate::findOrFail($id);
 
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'nickname' => 'nullable|string|max:100',
-            'gender' => 'nullable|string|in:male,female,L,P,Laki-laki,Perempuan',
-            'birth_place' => 'nullable|string|max:100',
-            'birth_date' => 'nullable|date',
-            'nik' => 'nullable|string|max:30',
-            'nisn' => 'nullable|string|max:30',
-            'student_type' => 'nullable|string|max:50',
-            'special_needs_type' => 'nullable|string|max:255',
-            'target_class' => 'nullable|string|max:100',
-            'academic_year' => 'nullable|string|max:50',
-            'wave' => 'nullable|string|max:100',
-            'father_name' => 'nullable|string|max:255',
-            'father_phone' => 'nullable|string|max:50',
-            'father_job' => 'nullable|string|max:100',
-            'mother_name' => 'nullable|string|max:255',
-            'mother_phone' => 'nullable|string|max:50',
-            'mother_job' => 'nullable|string|max:100',
-            'guardian_name' => 'nullable|string|max:255',
-            'guardian_phone' => 'nullable|string|max:50',
-            'parent_phone' => 'nullable|string|max:50',
-            'address' => 'nullable|string',
-            'city' => 'nullable|string|max:100',
-            'province' => 'nullable|string|max:100',
-            'previous_school' => 'nullable|string|max:255',
-            'spmb_status' => 'nullable|string|max:50',
-            'registration_status' => 'nullable|string|max:50',
-            'spmb_payment_status' => 'nullable|string|max:50',
-            'payment_status' => 'nullable|string|max:50',
-        ]);
+            $validated = $request->validate([
+                'full_name' => 'required|string|max:255',
+                'nickname' => 'nullable|string|max:100',
+                'gender' => 'nullable|string|in:male,female,L,P,Laki-laki,Perempuan',
+                'birth_place' => 'nullable|string|max:100',
+                'birth_date' => 'nullable|date',
+                'nik' => 'nullable|string|max:30',
+                'nisn' => 'nullable|string|max:30',
+                'student_type' => 'nullable|string|max:50',
+                'special_needs_type' => 'nullable|string|max:255',
+                'target_class' => 'nullable|string|max:100',
+                'academic_year' => 'nullable|string|max:50',
+                'wave' => 'nullable|string|max:100',
+                'father_name' => 'nullable|string|max:255',
+                'father_phone' => 'nullable|string|max:50',
+                'father_job' => 'nullable|string|max:100',
+                'mother_name' => 'nullable|string|max:255',
+                'mother_phone' => 'nullable|string|max:50',
+                'mother_job' => 'nullable|string|max:100',
+                'guardian_name' => 'nullable|string|max:255',
+                'guardian_phone' => 'nullable|string|max:50',
+                'parent_phone' => 'nullable|string|max:50',
+                'address' => 'nullable|string',
+                'city' => 'nullable|string|max:100',
+                'province' => 'nullable|string|max:100',
+                'previous_school' => 'nullable|string|max:255',
+                'spmb_status' => 'nullable|string|max:50',
+                'registration_status' => 'nullable|string|max:50',
+                'spmb_payment_status' => 'nullable|string|max:50',
+                'payment_status' => 'nullable|string|max:50',
+            ]);
 
-        // Normalize student_type
-        if ($request->has('student_type')) {
-            $stUpper = strtoupper(trim((string)$request->input('student_type')));
-            $validated['student_type'] = (str_contains($stUpper, 'PDBK') || str_contains($stUpper, 'MBK') || str_contains($stUpper, 'ABK') || str_contains($stUpper, 'INKLUSI')) ? 'PDBK' : 'REGULER';
+            return DB::transaction(function () use ($candidate, $validated, $request) {
+                // Normalize student_type
+                if ($request->has('student_type')) {
+                    $stUpper = strtoupper(trim((string)$request->input('student_type')));
+                    $validated['student_type'] = (str_contains($stUpper, 'PDBK') || str_contains($stUpper, 'MBK') || str_contains($stUpper, 'ABK') || str_contains($stUpper, 'INKLUSI')) ? 'PDBK' : 'REGULER';
+                }
+
+                // Normalize gender
+                if (!empty($validated['gender'])) {
+                    $g = strtolower($validated['gender']);
+                    if (in_array($g, ['l', 'laki-laki', 'male'])) {
+                        $validated['gender'] = 'male';
+                    } elseif (in_array($g, ['p', 'perempuan', 'female'])) {
+                        $validated['gender'] = 'female';
+                    }
+                }
+
+                // Handle status column compatibility
+                $hasRegStatus = Schema::hasColumn('spmb_candidates', 'registration_status');
+                $hasSpmbStatus = Schema::hasColumn('spmb_candidates', 'spmb_status');
+                $statusVal = $request->input('registration_status', $request->input('spmb_status'));
+                if ($statusVal) {
+                    if ($hasRegStatus) $validated['registration_status'] = $statusVal;
+                    if ($hasSpmbStatus) $validated['spmb_status'] = $statusVal;
+                }
+
+                $hasPayStatus = Schema::hasColumn('spmb_candidates', 'payment_status');
+                $hasSpmbPayStatus = Schema::hasColumn('spmb_candidates', 'spmb_payment_status');
+                $payVal = $request->input('payment_status', $request->input('spmb_payment_status'));
+                if ($payVal) {
+                    if ($hasPayStatus) $validated['payment_status'] = $payVal;
+                    if ($hasSpmbPayStatus) $validated['spmb_payment_status'] = $payVal;
+                }
+
+                $candidate->update($validated);
+
+                // If enrolled to an active student, sync matching fields
+                if ($candidate->student_id && ($student = Student::find($candidate->student_id))) {
+                    $studentUpdate = [
+                        'full_name' => $candidate->full_name,
+                        'nickname' => $candidate->nickname,
+                        'gender' => $candidate->gender === 'female' ? 'P' : 'L',
+                        'birth_place' => $candidate->birth_place,
+                        'birth_date' => $candidate->birth_date,
+                        'nik' => $candidate->nik,
+                        'nisn' => $candidate->nisn,
+                        'father_name' => $candidate->father_name,
+                        'father_phone' => $candidate->father_phone,
+                        'father_job' => $candidate->father_job,
+                        'mother_name' => $candidate->mother_name,
+                        'mother_phone' => $candidate->mother_phone,
+                        'mother_job' => $candidate->mother_job,
+                        'guardian_name' => $candidate->guardian_name,
+                        'guardian_phone' => $candidate->guardian_phone,
+                        'parent_phone' => $candidate->parent_phone,
+                        'address' => $candidate->address,
+                        'city' => $candidate->city,
+                        'province' => $candidate->province,
+                        'previous_school' => $candidate->previous_school,
+                    ];
+                    $student->update(array_filter($studentUpdate, fn($v) => !is_null($v)));
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Data pendaftar {$candidate->full_name} berhasil diperbarui.",
+                    'candidate' => $candidate->fresh(['student.classroom']),
+                ]);
+            });
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal: ' . implode(', ', array_map(fn($v) => implode(' ', $v), $e->errors())),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui data pendaftar: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Normalize gender
-        if (!empty($validated['gender'])) {
-            $g = strtolower($validated['gender']);
-            if (in_array($g, ['l', 'laki-laki', 'male'])) {
-                $validated['gender'] = 'male';
-            } elseif (in_array($g, ['p', 'perempuan', 'female'])) {
-                $validated['gender'] = 'female';
-            }
-        }
-
-        // Handle status column compatibility
-        $hasRegStatus = \Illuminate\Support\Facades\Schema::hasColumn('spmb_candidates', 'registration_status');
-        $hasSpmbStatus = \Illuminate\Support\Facades\Schema::hasColumn('spmb_candidates', 'spmb_status');
-        $statusVal = $request->input('registration_status', $request->input('spmb_status'));
-        if ($statusVal) {
-            if ($hasRegStatus) $validated['registration_status'] = $statusVal;
-            if ($hasSpmbStatus) $validated['spmb_status'] = $statusVal;
-        }
-
-        $hasPayStatus = \Illuminate\Support\Facades\Schema::hasColumn('spmb_candidates', 'payment_status');
-        $hasSpmbPayStatus = \Illuminate\Support\Facades\Schema::hasColumn('spmb_candidates', 'spmb_payment_status');
-        $payVal = $request->input('payment_status', $request->input('spmb_payment_status'));
-        if ($payVal) {
-            if ($hasPayStatus) $validated['payment_status'] = $payVal;
-            if ($hasSpmbPayStatus) $validated['spmb_payment_status'] = $payVal;
-        }
-
-        $candidate->update($validated);
-
-        // If enrolled to an active student, sync matching fields
-        if ($candidate->student_id && ($student = Student::find($candidate->student_id))) {
-            $studentUpdate = [
-                'full_name' => $candidate->full_name,
-                'nickname' => $candidate->nickname,
-                'gender' => $candidate->gender === 'female' ? 'P' : 'L',
-                'birth_place' => $candidate->birth_place,
-                'birth_date' => $candidate->birth_date,
-                'nik' => $candidate->nik,
-                'nisn' => $candidate->nisn,
-                'father_name' => $candidate->father_name,
-                'father_phone' => $candidate->father_phone,
-                'father_job' => $candidate->father_job,
-                'mother_name' => $candidate->mother_name,
-                'mother_phone' => $candidate->mother_phone,
-                'mother_job' => $candidate->mother_job,
-                'guardian_name' => $candidate->guardian_name,
-                'guardian_phone' => $candidate->guardian_phone,
-                'parent_phone' => $candidate->parent_phone,
-                'address' => $candidate->address,
-                'city' => $candidate->city,
-                'province' => $candidate->province,
-                'previous_school' => $candidate->previous_school,
-            ];
-            $student->update(array_filter($studentUpdate, fn($v) => !is_null($v)));
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Data pendaftar {$candidate->full_name} berhasil diperbarui.",
-            'candidate' => $candidate->fresh(['student.classroom']),
-        ]);
     }
 
     /**
@@ -549,30 +735,40 @@ class SpmbCandidateController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $candidate = SpmbCandidate::findOrFail($id);
-        $name = $candidate->full_name;
+        try {
+            $candidate = SpmbCandidate::findOrFail($id);
+            $name = $candidate->full_name;
 
-        // 1. Unlink any student record referencing this candidate
-        Student::where('spmb_candidate_id', $candidate->id)->update(['spmb_candidate_id' => null]);
+            return DB::transaction(function () use ($candidate, $name) {
+                // 1. Unlink any student record referencing this candidate
+                Student::where('spmb_candidate_id', $candidate->id)->update(['spmb_candidate_id' => null]);
 
-        // 2. If candidate is linked to a student, delete student & student histories cleanly
-        if ($candidate->student_id) {
-            $studentId = $candidate->student_id;
-            $candidate->student_id = null;
-            $candidate->save();
+                // 2. If candidate is linked to a student, delete student & student histories cleanly
+                if ($candidate->student_id) {
+                    $studentId = $candidate->student_id;
+                    $candidate->student_id = null;
+                    $candidate->save();
 
-            $student = Student::find($studentId);
-            if ($student) {
-                \App\Models\StudentClassroomHistory::where('student_id', $student->id)->delete();
-                $student->delete();
-            }
+                    $student = Student::find($studentId);
+                    if ($student) {
+                        StudentClassroomHistory::where('student_id', $student->id)->delete();
+                        $student->delete();
+                    }
+                }
+
+                $candidate->delete();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Data calon pendaftar {$name} berhasil dihapus.",
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus pendaftar: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $candidate->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => "Data calon pendaftar {$name} berhasil dihapus.",
-        ]);
     }
 }
+

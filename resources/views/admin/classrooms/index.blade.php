@@ -1,4 +1,233 @@
 <x-admin-layout>
+    <!-- Alpine.js Application Logic for Rombongan Belajar -->
+    <script>
+        function rombelApp() {
+            return {
+                studentsModalOpen: false,
+                formModalOpen: false,
+                isEdit: false,
+                saving: false,
+                selectedClassroom: null,
+                classroomStudents: [],
+                teachersList: @json($teachers),
+                teacherSearch: '',
+                teacherDropdownOpen: false,
+
+                get selectedTeacher() {
+                    if (!this.formData.homeroom_teacher_id) return null;
+                    return this.teachersList.find(t => t.id == this.formData.homeroom_teacher_id) || null;
+                },
+
+                get filteredTeachers() {
+                    if (!this.teacherSearch) return this.teachersList;
+                    const q = this.teacherSearch.toLowerCase();
+                    return this.teachersList.filter(t => (t.name || '').toLowerCase().includes(q) || (t.position || '').toLowerCase().includes(q));
+                },
+
+                selectTeacher(id) {
+                    this.formData.homeroom_teacher_id = id;
+                    this.teacherDropdownOpen = false;
+                    this.teacherSearch = '';
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                clearTeacher() {
+                    this.formData.homeroom_teacher_id = '';
+                    this.teacherSearch = '';
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                formData: {
+                    id: null,
+                    name: '',
+                    code: '',
+                    class_level_id: '',
+                    academic_year_id: '{{ $uniqueAcademicYears->firstWhere('has_active', true)?->id ?? ($uniqueAcademicYears->first()?->id ?? '') }}',
+                    homeroom_teacher_id: '',
+                    capacity: 32,
+                },
+                confirmModal: {
+                    open: false,
+                    id: null,
+                    title: '',
+                    message: '',
+                    loading: false
+                },
+
+                openStudentsModal(id) {
+                    fetch(`/classrooms/${id}/students`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            this.selectedClassroom = res.classroom;
+                            this.classroomStudents = res.students;
+                            this.studentsModalOpen = true;
+                            this.$nextTick(() => {
+                                if (window.lucide) lucide.createIcons();
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        if (window.showToastNotification) {
+                            window.showToastNotification("Gagal memuat siswa rombel: " + err.message, "error");
+                        } else {
+                            alert("Gagal memuat siswa rombel: " + err.message);
+                        }
+                    });
+                },
+
+                openCreateModal() {
+                    this.isEdit = false;
+                    this.teacherSearch = '';
+                    this.teacherDropdownOpen = false;
+                    this.formData = {
+                        id: null,
+                        name: '',
+                        code: '',
+                        class_level_id: '',
+                        academic_year_id: '{{ $uniqueAcademicYears->firstWhere('has_active', true)?->id ?? ($uniqueAcademicYears->first()?->id ?? '') }}',
+                        homeroom_teacher_id: '',
+                        capacity: 32,
+                    };
+                    this.formModalOpen = true;
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                openEditModal(id, name, code, classLevelId, academicYearId, teacherId, capacity) {
+                    this.isEdit = true;
+                    this.teacherSearch = '';
+                    this.teacherDropdownOpen = false;
+                    this.formData = {
+                        id: id,
+                        name: name,
+                        code: code || '',
+                        class_level_id: classLevelId,
+                        academic_year_id: academicYearId || '',
+                        homeroom_teacher_id: teacherId || '',
+                        capacity: capacity || 32,
+                    };
+                    this.formModalOpen = true;
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                submitForm() {
+                    if (this.saving) return;
+                    this.saving = true;
+
+                    const url = this.isEdit ? `/classrooms/${this.formData.id}` : '/classrooms';
+                    const method = this.isEdit ? 'PUT' : 'POST';
+
+                    fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(this.formData)
+                    })
+                    .then(async res => {
+                        this.saving = false;
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            this.formModalOpen = false;
+                            if (window.setPendingToast) {
+                                window.setPendingToast(data.message || 'Rombel berhasil disimpan!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Terjadi kesalahan saat menyimpan.');
+                            if (window.showToastNotification) {
+                                window.showToastNotification(errMsg, 'error');
+                            } else {
+                                alert(errMsg);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.saving = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    });
+                },
+
+                confirmDeleteRombel(id, name) {
+                    this.confirmModal = {
+                        open: true,
+                        id: id,
+                        title: 'Hapus Rombongan Belajar?',
+                        message: `Apakah Anda yakin ingin menghapus rombel <strong>${name}</strong>? Data yang telah dihapus tidak dapat dipulihkan.`,
+                        loading: false
+                    };
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                executeConfirmDelete() {
+                    if (this.confirmModal.loading) return;
+                    this.confirmModal.loading = true;
+
+                    fetch(`/classrooms/${this.confirmModal.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(async res => {
+                        this.confirmModal.loading = false;
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            this.confirmModal.open = false;
+                            if (window.setPendingToast) {
+                                window.setPendingToast(data.message || 'Rombel berhasil dihapus!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            const errMsg = data.message || 'Gagal menghapus rombel.';
+                            if (window.showToastNotification) {
+                                window.showToastNotification(errMsg, 'error');
+                            } else {
+                                alert(errMsg);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.confirmModal.loading = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    });
+                }
+            };
+        }
+        window.rombelApp = rombelApp;
+        document.addEventListener('alpine:init', () => {
+            if (typeof Alpine !== 'undefined' && Alpine.data) {
+                Alpine.data('rombelApp', rombelApp);
+            }
+        });
+    </script>
+
     <div class="p-4 sm:p-5 lg:p-6 space-y-4 lg:space-y-5" x-data="rombelApp()">
 
         <!-- GREETING / PAGE TITLE -->
@@ -36,7 +265,7 @@
         <!-- STATS CARDS GRID -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Stat 1: Total Rombel -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Rombel</p>
@@ -49,12 +278,12 @@
                     </div>
                 </div>
                 <div class="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
-                    Kelas aktif terdaftar di SD
+                    Kelas aktif terdaftar di {{ setting('unit_name', 'SMP Anak Saleh') }}
                 </div>
             </div>
 
             <!-- Stat 2: Total Kapasitas Kuota -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Kapasitas</p>
@@ -72,7 +301,7 @@
             </div>
 
             <!-- Stat 3: Siswa Terisi -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Siswa Terisi</p>
@@ -90,7 +319,7 @@
             </div>
 
             <!-- Stat 4: Persentase Keterisian -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tingkat Keterisian</p>
@@ -662,227 +891,4 @@
         </div>
 
     </div>
-
-    <!-- Alpine.js Application Logic for Rombongan Belajar -->
-    <script>
-        function rombelApp() {
-            return {
-                studentsModalOpen: false,
-                formModalOpen: false,
-                isEdit: false,
-                saving: false,
-                selectedClassroom: null,
-                classroomStudents: [],
-                teachersList: @json($teachers),
-                teacherSearch: '',
-                teacherDropdownOpen: false,
-
-                get selectedTeacher() {
-                    if (!this.formData.homeroom_teacher_id) return null;
-                    return this.teachersList.find(t => t.id == this.formData.homeroom_teacher_id) || null;
-                },
-
-                get filteredTeachers() {
-                    if (!this.teacherSearch) return this.teachersList;
-                    const q = this.teacherSearch.toLowerCase();
-                    return this.teachersList.filter(t => (t.name || '').toLowerCase().includes(q) || (t.position || '').toLowerCase().includes(q));
-                },
-
-                selectTeacher(id) {
-                    this.formData.homeroom_teacher_id = id;
-                    this.teacherDropdownOpen = false;
-                    this.teacherSearch = '';
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                clearTeacher() {
-                    this.formData.homeroom_teacher_id = '';
-                    this.teacherSearch = '';
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                formData: {
-                    id: null,
-                    name: '',
-                    code: '',
-                    class_level_id: '',
-                    academic_year_id: '{{ $uniqueAcademicYears->firstWhere('has_active', true)?->id ?? ($uniqueAcademicYears->first()?->id ?? '') }}',
-                    homeroom_teacher_id: '',
-                    capacity: 32,
-                },
-                confirmModal: {
-                    open: false,
-                    id: null,
-                    title: '',
-                    message: '',
-                    loading: false
-                },
-
-                openStudentsModal(id) {
-                    fetch(`/classrooms/${id}/students`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            this.selectedClassroom = res.classroom;
-                            this.classroomStudents = res.students;
-                            this.studentsModalOpen = true;
-                            this.$nextTick(() => {
-                                if (window.lucide) lucide.createIcons();
-                            });
-                        }
-                    })
-                    .catch(err => {
-                        if (window.showToastNotification) {
-                            window.showToastNotification("Gagal memuat siswa rombel: " + err.message, "error");
-                        } else {
-                            alert("Gagal memuat siswa rombel: " + err.message);
-                        }
-                    });
-                },
-
-                openCreateModal() {
-                    this.isEdit = false;
-                    this.teacherSearch = '';
-                    this.teacherDropdownOpen = false;
-                    this.formData = {
-                        id: null,
-                        name: '',
-                        code: '',
-                        class_level_id: '',
-                        academic_year_id: '{{ $uniqueAcademicYears->firstWhere('has_active', true)?->id ?? ($uniqueAcademicYears->first()?->id ?? '') }}',
-                        homeroom_teacher_id: '',
-                        capacity: 32,
-                    };
-                    this.formModalOpen = true;
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                openEditModal(id, name, code, classLevelId, academicYearId, teacherId, capacity) {
-                    this.isEdit = true;
-                    this.teacherSearch = '';
-                    this.teacherDropdownOpen = false;
-                    this.formData = {
-                        id: id,
-                        name: name,
-                        code: code || '',
-                        class_level_id: classLevelId,
-                        academic_year_id: academicYearId || '',
-                        homeroom_teacher_id: teacherId || '',
-                        capacity: capacity || 32,
-                    };
-                    this.formModalOpen = true;
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                submitForm() {
-                    if (this.saving) return;
-                    this.saving = true;
-
-                    const url = this.isEdit ? `/classrooms/${this.formData.id}` : '/classrooms';
-                    const method = this.isEdit ? 'PUT' : 'POST';
-
-                    fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(this.formData)
-                    })
-                    .then(async res => {
-                        this.saving = false;
-                        const data = await res.json();
-                        if (res.ok && data.success) {
-                            this.formModalOpen = false;
-                            if (window.setPendingToast) {
-                                window.setPendingToast(data.message || 'Rombel berhasil disimpan!', 'success');
-                            }
-                            window.location.reload();
-                        } else {
-                            const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Terjadi kesalahan saat menyimpan.');
-                            if (window.showToastNotification) {
-                                window.showToastNotification(errMsg, 'error');
-                            } else {
-                                alert(errMsg);
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.saving = false;
-                        if (window.showToastNotification) {
-                            window.showToastNotification('Error: ' + err.message, 'error');
-                        } else {
-                            alert('Error: ' + err.message);
-                        }
-                    });
-                },
-
-                confirmDeleteRombel(id, name) {
-                    this.confirmModal = {
-                        open: true,
-                        id: id,
-                        title: 'Hapus Rombongan Belajar?',
-                        message: `Apakah Anda yakin ingin menghapus rombel <strong>${name}</strong>? Data yang telah dihapus tidak dapat dipulihkan.`,
-                        loading: false
-                    };
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                executeConfirmDelete() {
-                    if (this.confirmModal.loading) return;
-                    this.confirmModal.loading = true;
-
-                    fetch(`/classrooms/${this.confirmModal.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(async res => {
-                        this.confirmModal.loading = false;
-                        const data = await res.json();
-                        if (res.ok && data.success) {
-                            this.confirmModal.open = false;
-                            if (window.setPendingToast) {
-                                window.setPendingToast(data.message || 'Rombel berhasil dihapus!', 'success');
-                            }
-                            window.location.reload();
-                        } else {
-                            const errMsg = data.message || 'Gagal menghapus rombel.';
-                            if (window.showToastNotification) {
-                                window.showToastNotification(errMsg, 'error');
-                            } else {
-                                alert(errMsg);
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.confirmModal.loading = false;
-                        if (window.showToastNotification) {
-                            window.showToastNotification('Error: ' + err.message, 'error');
-                        } else {
-                            alert('Error: ' + err.message);
-                        }
-                    });
-                }
-            }
-        }
-    </script>
 </x-admin-layout>

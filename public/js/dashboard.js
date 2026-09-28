@@ -1,173 +1,24 @@
 /**
  * SANS Malang School Information System
- * Dashboard Animations & Interactivity
- * Using Anime.js
+ * Dashboard Interactivity & Performance Optimizations
+ * (Content & card entry animations removed for instant, smooth rendering)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initial Entry Animations (Staggered fade-in and scale-up)
-    const animateEntry = () => {
-        const isDesktop = window.innerWidth >= 768;
-
-        // Sidebar entrance (Desktop only to prevent auto-opening on mobile)
-        if (isDesktop) {
-            anime({
-                targets: '#sidebar',
-                translateX: [-100, 0],
-                opacity: [0, 1],
-                easing: 'easeOutExpo',
-                duration: 1200
-            });
-        }
-
-        // Header entrance
-        anime({
-            targets: '#header',
-            translateY: [-50, 0],
-            opacity: [0, 1],
-            easing: 'easeOutExpo',
-            duration: 1200,
-            delay: 150
-        });
-
-        // Grid cards entrance (staggered)
-        anime({
-            targets: '.animate-card',
-            scale: [0.9, 1],
-            translateY: [30, 0],
-            opacity: [0, 1],
-            delay: anime.stagger(100, { start: 300 }),
-            duration: 1000,
-            easing: 'easeOutElastic(1, .8)'
-        });
-    };
-
-    // 2. Stat Counter Animations
-    const animateCounters = () => {
+    // 1. Instant Counter Initialization (No delays / lag)
+    const initCounters = () => {
         const counters = document.querySelectorAll('.stat-counter');
         counters.forEach(counter => {
             const targetVal = parseInt(counter.getAttribute('data-target') || '0', 10);
-            const obj = { value: 0 };
-            
-            anime({
-                targets: obj,
-                value: targetVal,
-                round: 1,
-                easing: 'easeOutExpo',
-                duration: 2000,
-                delay: 500,
-                update: () => {
-                    counter.innerHTML = obj.value.toLocaleString('id-ID');
-                }
-            });
+            counter.innerHTML = targetVal.toLocaleString('id-ID');
         });
     };
 
-    // 3. Hover Micro-animations
-    const setupHoverAnimations = () => {
-        // Menu item hovers
-        const menuItems = document.querySelectorAll('.menu-item');
-        menuItems.forEach(item => {
-            item.addEventListener('mouseenter', () => {
-                const icon = item.querySelector('.menu-icon');
-                const text = item.querySelector('.menu-text');
-                if (icon) {
-                    anime({
-                        targets: icon,
-                        scale: 1.2,
-                        rotate: '5deg',
-                        duration: 300,
-                        easing: 'easeOutQuad'
-                    });
-                }
-                if (text) {
-                    anime({
-                        targets: text,
-                        translateX: 5,
-                        duration: 300,
-                        easing: 'easeOutQuad'
-                    });
-                }
-            });
-
-            item.addEventListener('mouseleave', () => {
-                const icon = item.querySelector('.menu-icon');
-                const text = item.querySelector('.menu-text');
-                if (icon) {
-                    anime({
-                        targets: icon,
-                        scale: 1.0,
-                        rotate: '0deg',
-                        duration: 300,
-                        easing: 'easeOutQuad'
-                    });
-                }
-                if (text) {
-                    anime({
-                        targets: text,
-                        translateX: 0,
-                        duration: 300,
-                        easing: 'easeOutQuad'
-                    });
-                }
-            });
-        });
-
-        // Stat Card hovers
-        const cards = document.querySelectorAll('.animate-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                anime({
-                    targets: card,
-                    translateY: -6,
-                    scale: 1.02,
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                    duration: 250,
-                    easing: 'easeOutQuad'
-                });
-            });
-            card.addEventListener('mouseleave', () => {
-                anime({
-                    targets: card,
-                    translateY: 0,
-                    scale: 1.0,
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                    duration: 250,
-                    easing: 'easeOutQuad'
-                });
-            });
-        });
-    };
-
-    // 4. Quick Notification Toast
-    const setupNotifications = () => {
-        // Handled by Alpine in header component
-    };
-
-    // 5. Mini Interactive Performance Chart Animation (SVG path)
-    const animateChart = () => {
-        const path = document.querySelector('.chart-line path');
-        if (path) {
-            const length = path.getTotalLength();
-            path.style.strokeDasharray = length;
-            path.style.strokeDashoffset = length;
-
-            anime({
-                targets: path,
-                strokeDashoffset: [length, 0],
-                duration: 2500,
-                easing: 'easeOutSine',
-                delay: 800
-            });
-        }
-    };
-
-    // 6. Theme Toggle Switch (Dark / Light Mode)
+    // 2. Theme Toggle Switch (Dark / Light Mode)
     const setupThemeToggle = () => {
         const themeToggleBtn = document.getElementById('theme-toggle');
         if (themeToggleBtn) {
             themeToggleBtn.addEventListener('click', () => {
-                // Toggle dark class on HTML document
                 if (document.documentElement.classList.contains('dark')) {
                     document.documentElement.classList.remove('dark');
                     localStorage.setItem('color-theme', 'light');
@@ -175,23 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.classList.add('dark');
                     localStorage.setItem('color-theme', 'dark');
                 }
-                
-                // Micro-animation for theme button click
-                anime({
-                    targets: themeToggleBtn,
-                    rotate: '360deg',
-                    scale: [0.8, 1],
-                    duration: 500,
-                    easing: 'easeOutElastic(1, .8)',
-                    complete: () => {
-                        themeToggleBtn.style.transform = 'none'; // reset style for future clicks
-                    }
-                });
             });
         }
     };
 
-    // 7. Sidebar Toggle for Mobile & Desktop (Burger & Close Arrow)
+    // 3. Sidebar Toggle for Mobile & Desktop (Burger & Close Arrow)
     const setupSidebarToggle = () => {
         const toggleBtn = document.getElementById('sidebar-toggle');
         const closeBtn = document.getElementById('sidebar-close');
@@ -223,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     backdrop.classList.add('opacity-0');
                     setTimeout(() => {
                         backdrop.classList.add('hidden');
-                    }, 300);
+                    }, 200);
                 }
             };
 
@@ -243,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleBtn.addEventListener('click', toggleSidebar);
             }
 
-            // Tambahan: tombol "Menu" mobile (data-sidebar-toggle)
+            // Mobile menu toggles
             document.querySelectorAll('[data-sidebar-toggle]').forEach(btn => {
                 btn.addEventListener('click', toggleSidebar);
             });
@@ -277,12 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 8. Sidebar Scroll Preservation & Active Item Auto-Scroll
+    // 4. Sidebar Scroll Preservation & Active Item Auto-Scroll
     const setupSidebarScroll = () => {
         const sidebarScroll = document.getElementById('sidebar-nav-container') || document.querySelector('#sidebar .overflow-y-auto');
         if (!sidebarScroll) return;
 
-        // Save scroll position on scroll and link clicks
         let scrollTimeout;
         sidebarScroll.addEventListener('scroll', () => {
             clearTimeout(scrollTimeout);
@@ -301,15 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.setItem('sidebar_scroll_top', sidebarScroll.scrollTop);
         });
 
-        // Find active menu item
         const findActiveItem = () => {
-            // 1. Direct class matching
             let active = sidebarScroll.querySelector(
                 'a.bg-slate-100, a.text-indigo-600, a.bg-slate-50, .menu-item.bg-slate-100, a.font-semibold:not(h1):not(h2):not(h3):not(h4)'
             );
             if (active) return active;
 
-            // 2. URL pathname matching fallback
             const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
             const links = Array.from(sidebarScroll.querySelectorAll('a[href]'));
             for (const link of links) {
@@ -327,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedScroll = sessionStorage.getItem('sidebar_scroll_top');
         let hasRestored = false;
 
-        // Restore saved scroll position immediately if available
         if (savedScroll !== null) {
             const scrollVal = parseInt(savedScroll, 10);
             if (!isNaN(scrollVal)) {
@@ -336,13 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Ensure active item is within comfortable visible range
         const scrollActiveIntoView = () => {
             if (!activeItem) return;
             const containerRect = sidebarScroll.getBoundingClientRect();
             const itemRect = activeItem.getBoundingClientRect();
 
-            // Check if item is above or below the container's visible bounds
             const isAbove = itemRect.top < containerRect.top + 20;
             const isBelow = itemRect.bottom > containerRect.bottom - 20;
 
@@ -354,20 +186,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Run immediately
         scrollActiveIntoView();
-
-        // Run after potential Alpine.js accordion collapse/expand animation completes
-        setTimeout(scrollActiveIntoView, 150);
-        setTimeout(scrollActiveIntoView, 350);
+        setTimeout(scrollActiveIntoView, 100);
     };
 
-    // Execute animations
-    animateEntry();
-    animateCounters();
-    setupHoverAnimations();
-    setupNotifications();
-    animateChart();
+    // Run core features immediately
+    initCounters();
     setupThemeToggle();
     setupSidebarToggle();
     setupSidebarScroll();

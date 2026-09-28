@@ -59,6 +59,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             EmployeeSeeder::class,
             PicketSeeder::class,
+            AcademicMasterSeeder::class,
+            StudentSeeder::class,
         ]);
 
         // \App\Models\ZktecoDevice::firstOrCreate(

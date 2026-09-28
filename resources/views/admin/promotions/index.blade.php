@@ -1,5 +1,285 @@
 <x-admin-layout>
-    <div class="p-4 sm:p-5 lg:p-6 space-y-4 lg:space-y-5" x-data="promotionApp()" x-cloak>
+    <!-- Alpine.js Application Logic -->
+    <script>
+        function promotionApp() {
+            const allClassroomsData = @json($allClassrooms);
+            const sourceClassroomsData = @json($sourceClassrooms);
+            const allAcademicYearsData = @json($academicYears);
+
+            return {
+                activeTab: 'promotion',
+                sourceYearId: '{{ $sourceYear?->id }}',
+                targetYearId: '{{ $academicYears->count() > 1 ? $academicYears[0]->id : ($activeAcademicYear?->id ?? "") }}',
+                sourceClassroomId: '',
+                defaultTargetClassroomId: '',
+                currentClassroomName: '',
+                students: [],
+                loading: false,
+                processing: false,
+
+                // Graduation
+                gradClassroomId: '',
+                gradAcademicYearId: '{{ $sourceYear?->id ?? $activeAcademicYear?->id }}',
+                gradStudents: [],
+                gradLoading: false,
+                gradProcessing: false,
+
+                allAcademicYears: allAcademicYearsData,
+                allClassrooms: allClassroomsData,
+                sourceClassrooms: sourceClassroomsData,
+
+                get filteredSourceClassrooms() {
+                    return this.allClassrooms.filter(c => c.academic_year_id == this.sourceYearId);
+                },
+
+                get filteredTargetClassrooms() {
+                    return this.allClassrooms.filter(c => c.academic_year_id == this.targetYearId);
+                },
+
+                get allClassroomsForStay() {
+                    return this.allClassrooms.filter(c => c.academic_year_id == this.targetYearId);
+                },
+
+                onSourceYearChange() {
+                    this.sourceClassroomId = '';
+                    this.students = [];
+                },
+
+                onTargetYearChange() {
+                    this.defaultTargetClassroomId = '';
+                },
+
+                fetchStudents() {
+                    if (!this.sourceClassroomId) {
+                        this.students = [];
+                        return;
+                    }
+
+                    this.loading = true;
+                    fetch(`/class-promotions/students?classroom_id=${this.sourceClassroomId}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            this.currentClassroomName = res.classroom?.name || '';
+                            this.students = res.students.map(s => ({
+                                ...s,
+                                action: 'promote',
+                                target_classroom_id: this.defaultTargetClassroomId || '',
+                            }));
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Gagal memuat siswa.', 'error');
+                            } else {
+                                alert(res.message || 'Gagal memuat siswa.');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                        this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+                    });
+                },
+
+                applyDefaultTarget() {
+                    this.students.forEach(s => {
+                        if (s.action === 'promote') {
+                            s.target_classroom_id = this.defaultTargetClassroomId;
+                        }
+                    });
+                },
+
+                countPromoted() {
+                    return this.students.filter(s => s.action === 'promote').length;
+                },
+
+                countStayed() {
+                    return this.students.filter(s => s.action === 'stay').length;
+                },
+
+                countTransferred() {
+                    return this.students.filter(s => s.action === 'transfer_out').length;
+                },
+
+                submitPromotion() {
+                    if (!this.sourceClassroomId || !this.targetYearId) {
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Silakan pilih Rombel Asal dan Tahun Pelajaran Tujuan.', 'warning');
+                        } else {
+                            alert('Silakan pilih Rombel Asal dan Tahun Pelajaran Tujuan.');
+                        }
+                        return;
+                    }
+
+                    if (!confirm(`Apakah Anda yakin ingin memproses kenaikan kelas untuk ${this.students.length} siswa ini?`)) {
+                        return;
+                    }
+
+                    this.processing = true;
+
+                    const payload = {
+                        source_classroom_id: this.sourceClassroomId,
+                        target_academic_year_id: this.targetYearId,
+                        default_target_classroom_id: this.defaultTargetClassroomId || null,
+                        students: this.students.map(s => ({
+                            student_id: s.id,
+                            action: s.action,
+                            target_classroom_id: s.target_classroom_id || this.defaultTargetClassroomId || null,
+                        }))
+                    };
+
+                    fetch('/class-promotions/process', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        this.processing = false;
+                        if (res.success) {
+                            if (window.setPendingToast) {
+                                window.setPendingToast(res.message || 'Proses kenaikan kelas berhasil!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Gagal memproses kenaikan kelas.', 'error');
+                            } else {
+                                alert('Gagal: ' + res.message);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.processing = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    });
+                },
+
+                // Graduation
+                fetchGradStudents() {
+                    if (!this.gradClassroomId) {
+                        this.gradStudents = [];
+                        return;
+                    }
+
+                    this.gradLoading = true;
+                    fetch(`/class-promotions/students?classroom_id=${this.gradClassroomId}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            this.gradStudents = res.students.map(s => ({
+                                ...s,
+                                diploma_number: s.diploma_number || '',
+                            }));
+                        }
+                    })
+                    .catch(err => {
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    })
+                    .finally(() => {
+                        this.gradLoading = false;
+                        this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+                    });
+                },
+
+                submitGraduation() {
+                    if (!this.gradClassroomId || !this.gradAcademicYearId) {
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Silakan pilih Rombel Kelas 9 dan Tahun Pelajaran Kelulusan.', 'warning');
+                        } else {
+                            alert('Silakan pilih Rombel Kelas 9 dan Tahun Pelajaran Kelulusan.');
+                        }
+                        return;
+                    }
+
+                    if (!confirm(`Apakah Anda yakin ingin meluluskan ${this.gradStudents.length} siswa kelas 9 ini?`)) {
+                        return;
+                    }
+
+                    this.gradProcessing = true;
+
+                    const payload = {
+                        classroom_id: this.gradClassroomId,
+                        academic_year_id: this.gradAcademicYearId,
+                        students: this.gradStudents.map(s => ({
+                            student_id: s.id,
+                            diploma_number: s.diploma_number,
+                        }))
+                    };
+
+                    fetch('/class-promotions/graduate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        this.gradProcessing = false;
+                        if (res.success) {
+                            if (window.setPendingToast) {
+                                window.setPendingToast(res.message || 'Proses kelulusan berhasil!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Gagal memproses kelulusan.', 'error');
+                            } else {
+                                alert('Gagal: ' + res.message);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.gradProcessing = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    });
+                }
+            };
+        }
+        window.promotionApp = promotionApp;
+        document.addEventListener('alpine:init', () => {
+            if (typeof Alpine !== 'undefined' && Alpine.data) {
+                Alpine.data('promotionApp', promotionApp);
+            }
+        });
+    </script>
+
+    <div class="p-4 sm:p-5 lg:p-6 space-y-4 lg:space-y-5" x-data="promotionApp()">
 
         <!-- GREETING / PAGE TITLE -->
         <section class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full text-left">
@@ -347,236 +627,4 @@
         </div>
 
     </div>
-
-    <!-- Alpine.js Application Logic -->
-    <script>
-        function promotionApp() {
-            const allClassroomsData = @json($allClassrooms);
-            const sourceClassroomsData = @json($sourceClassrooms);
-            const allAcademicYearsData = @json($academicYears);
-
-            return {
-                activeTab: 'promotion',
-                sourceYearId: '{{ $sourceYear?->id }}',
-                targetYearId: '{{ $academicYears->count() > 1 ? $academicYears[0]->id : ($activeAcademicYear?->id ?? "") }}',
-                sourceClassroomId: '',
-                defaultTargetClassroomId: '',
-                currentClassroomName: '',
-                students: [],
-                loading: false,
-                processing: false,
-
-                // Graduation
-                gradClassroomId: '',
-                gradAcademicYearId: '{{ $sourceYear?->id ?? $activeAcademicYear?->id }}',
-                gradStudents: [],
-                gradLoading: false,
-                gradProcessing: false,
-
-                allAcademicYears: allAcademicYearsData,
-                allClassrooms: allClassroomsData,
-                sourceClassrooms: sourceClassroomsData,
-
-                get filteredSourceClassrooms() {
-                    return this.allClassrooms.filter(c => c.academic_year_id == this.sourceYearId);
-                },
-
-                get filteredTargetClassrooms() {
-                    return this.allClassrooms.filter(c => c.academic_year_id == this.targetYearId);
-                },
-
-                get allClassroomsForStay() {
-                    return this.allClassrooms.filter(c => c.academic_year_id == this.targetYearId);
-                },
-
-                onSourceYearChange() {
-                    this.sourceClassroomId = '';
-                    this.students = [];
-                },
-
-                onTargetYearChange() {
-                    this.defaultTargetClassroomId = '';
-                },
-
-                fetchStudents() {
-                    if (!this.sourceClassroomId) {
-                        this.students = [];
-                        return;
-                    }
-
-                    this.loading = true;
-                    fetch(`/class-promotions/students?classroom_id=${this.sourceClassroomId}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            this.currentClassroomName = res.classroom?.name || '';
-                            this.students = res.students.map(s => ({
-                                ...s,
-                                action: 'promote',
-                                target_classroom_id: this.defaultTargetClassroomId || '',
-                            }));
-                        } else {
-                            alert(res.message || 'Gagal memuat siswa.');
-                        }
-                    })
-                    .catch(err => {
-                        alert('Error: ' + err.message);
-                    })
-                    .finally(() => {
-                        this.loading = false;
-                        this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
-                    });
-                },
-
-                applyDefaultTarget() {
-                    this.students.forEach(s => {
-                        if (s.action === 'promote') {
-                            s.target_classroom_id = this.defaultTargetClassroomId;
-                        }
-                    });
-                },
-
-                countPromoted() {
-                    return this.students.filter(s => s.action === 'promote').length;
-                },
-
-                countStayed() {
-                    return this.students.filter(s => s.action === 'stay').length;
-                },
-
-                countTransferred() {
-                    return this.students.filter(s => s.action === 'transfer_out').length;
-                },
-
-                submitPromotion() {
-                    if (!this.sourceClassroomId || !this.targetYearId) {
-                        alert('Silakan pilih Rombel Asal dan Tahun Pelajaran Tujuan.');
-                        return;
-                    }
-
-                    if (!confirm(`Apakah Anda yakin ingin memproses kenaikan kelas untuk ${this.students.length} siswa ini?`)) {
-                        return;
-                    }
-
-                    this.processing = true;
-
-                    const payload = {
-                        source_classroom_id: this.sourceClassroomId,
-                        target_academic_year_id: this.targetYearId,
-                        default_target_classroom_id: this.defaultTargetClassroomId || null,
-                        students: this.students.map(s => ({
-                            student_id: s.id,
-                            action: s.action,
-                            target_classroom_id: s.target_classroom_id || this.defaultTargetClassroomId || null,
-                        }))
-                    };
-
-                    fetch('/class-promotions/process', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        this.processing = false;
-                        if (res.success) {
-                            alert(res.message);
-                            window.location.reload();
-                        } else {
-                            alert('Gagal: ' + res.message);
-                        }
-                    })
-                    .catch(err => {
-                        this.processing = false;
-                        alert('Error: ' + err.message);
-                    });
-                },
-
-                // Graduation
-                fetchGradStudents() {
-                    if (!this.gradClassroomId) {
-                        this.gradStudents = [];
-                        return;
-                    }
-
-                    this.gradLoading = true;
-                    fetch(`/class-promotions/students?classroom_id=${this.gradClassroomId}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            this.gradStudents = res.students.map(s => ({
-                                ...s,
-                                diploma_number: s.diploma_number || '',
-                            }));
-                        }
-                    })
-                    .catch(err => alert('Error: ' + err.message))
-                    .finally(() => {
-                        this.gradLoading = false;
-                        this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
-                    });
-                },
-
-                submitGraduation() {
-                    if (!this.gradClassroomId || !this.gradAcademicYearId) {
-                        alert('Silakan pilih Rombel Kelas 9 dan Tahun Pelajaran Kelulusan.');
-                        return;
-                    }
-
-                    if (!confirm(`Apakah Anda yakin ingin meluluskan ${this.gradStudents.length} siswa kelas 9 ini?`)) {
-                        return;
-                    }
-
-                    this.gradProcessing = true;
-
-                    const payload = {
-                        classroom_id: this.gradClassroomId,
-                        academic_year_id: this.gradAcademicYearId,
-                        students: this.gradStudents.map(s => ({
-                            student_id: s.id,
-                            diploma_number: s.diploma_number,
-                        }))
-                    };
-
-                    fetch('/class-promotions/graduate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        this.gradProcessing = false;
-                        if (res.success) {
-                            alert(res.message);
-                            window.location.reload();
-                        } else {
-                            alert('Gagal: ' + res.message);
-                        }
-                    })
-                    .catch(err => {
-                        this.gradProcessing = false;
-                        alert('Error: ' + err.message);
-                    });
-                }
-            };
-        }
-    </script>
 </x-admin-layout>

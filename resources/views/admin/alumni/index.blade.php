@@ -1,4 +1,91 @@
 <x-admin-layout>
+    <!-- Alpine Logic -->
+    <script>
+        function alumniApp() {
+            return {
+                editAlumniModalOpen: false,
+                saving: false,
+                alumniForm: {
+                    id: null,
+                    full_name: '',
+                    status: 'lulus',
+                    academic_year_id: null,
+                    graduation_year: '',
+                    diploma_number: '',
+                    continued_school: '',
+                    notes: '',
+                },
+
+                openEditAlumniModal(student) {
+                    this.alumniForm = {
+                        id: student.id,
+                        full_name: student.full_name,
+                        status: student.status || 'lulus',
+                        academic_year_id: student.academic_year_id || '{{ $academicYears->first()?->id }}',
+                        graduation_year: student.graduation_year || '',
+                        diploma_number: student.diploma_number || '',
+                        continued_school: student.continued_school || '',
+                        notes: student.notes || '',
+                    };
+                    this.editAlumniModalOpen = true;
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                submitAlumniForm() {
+                    if (this.saving) return;
+                    this.saving = true;
+
+                    fetch(`/alumni/${this.alumniForm.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(this.alumniForm)
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        this.saving = false;
+                        if (res.success) {
+                            this.editAlumniModalOpen = false;
+                            if (window.setPendingToast) {
+                                window.setPendingToast(res.message || 'Data alumni berhasil disimpan!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            if (window.showToastNotification) {
+                                window.showToastNotification(res.message || 'Gagal menyimpan info alumni.', 'error');
+                            } else {
+                                alert('Gagal: ' + res.message);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.saving = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    });
+                },
+
+                openDetailModal(id) {
+                    window.location.href = `/students?search=${id}`;
+                }
+            };
+        }
+        window.alumniApp = alumniApp;
+        document.addEventListener('alpine:init', () => {
+            if (typeof Alpine !== 'undefined' && Alpine.data) {
+                Alpine.data('alumniApp', alumniApp);
+            }
+        });
+    </script>
+
     <div class="p-4 sm:p-5 lg:p-6 space-y-4 lg:space-y-5" x-data="alumniApp()">
 
         <!-- GREETING / PAGE TITLE -->
@@ -36,7 +123,7 @@
 
         <!-- STATS CARDS KHUSUS ALUMNI -->
         <section class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Alumni</p>
@@ -51,7 +138,7 @@
                 <div class="mt-2 text-[10px] text-slate-400">Siswa yang telah dinyatakan lulus</div>
             </div>
 
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Putra (L)</p>
@@ -66,7 +153,7 @@
                 <div class="mt-2 text-[10px] text-slate-400">Alumni putra</div>
             </div>
 
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Putri (P)</p>
@@ -81,7 +168,7 @@
                 <div class="mt-2 text-[10px] text-slate-400">Alumni putri</div>
             </div>
 
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Tercatat No. Ijazah</p>
@@ -349,64 +436,4 @@
         </div>
 
     </div>
-
-    <!-- Alpine Logic -->
-    <script>
-        function alumniApp() {
-            return {
-                editAlumniModalOpen: false,
-                alumniForm: {
-                    id: null,
-                    full_name: '',
-                    status: 'lulus',
-                    academic_year_id: null,
-                    graduation_year: '',
-                    diploma_number: '',
-                    continued_school: '',
-                    notes: '',
-                },
-
-                openEditAlumniModal(student) {
-                    this.alumniForm = {
-                        id: student.id,
-                        full_name: student.full_name,
-                        status: student.status || 'lulus',
-                        academic_year_id: student.academic_year_id || '{{ $academicYears->first()?->id }}',
-                        graduation_year: student.graduation_year || '',
-                        diploma_number: student.diploma_number || '',
-                        continued_school: student.continued_school || '',
-                        notes: student.notes || '',
-                    };
-                    this.editAlumniModalOpen = true;
-                },
-
-                submitAlumniForm() {
-                    fetch(`/alumni/${this.alumniForm.id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(this.alumniForm)
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            alert(res.message);
-                            this.editAlumniModalOpen = false;
-                            window.location.reload();
-                        } else {
-                            alert('Gagal: ' + res.message);
-                        }
-                    })
-                    .catch(err => alert('Error: ' + err.message));
-                },
-
-                openDetailModal(id) {
-                    window.location.href = `/students?search=${id}`;
-                }
-            };
-        }
-    </script>
 </x-admin-layout>

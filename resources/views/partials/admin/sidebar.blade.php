@@ -204,9 +204,9 @@
                     </button>
 
                     <!-- Dropdown content with line connector -->
-                    <div x-show="openAcademic" x-collapse
+                    <div x-show="openAcademic" x-collapse x-cloak
                         class="mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1"
-                        style="margin-left:20px">
+                        style="margin-left:20px; {{ Request::routeIs('class-levels.*', 'classrooms.*', 'academic-years.*') ? '' : 'display: none;' }}">
                         <a href="{{ route('classrooms.index') }}"
                             class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('classrooms.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
                             <span>Rombongan Belajar</span>
@@ -270,9 +270,9 @@
                     </button>
 
                     <!-- Dropdown content with line connector -->
-                    <div x-show="openLeaves" x-collapse
+                    <div x-show="openLeaves" x-collapse x-cloak
                         class="mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1"
-                        style="margin-left:20px">
+                        style="margin-left:20px; {{ Request::routeIs('leaves.*', 'leave-types.*') ? '' : 'display: none;' }}">
                         <a href="{{ route('leaves.index') }}"
                             class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('leaves.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
                             <span>Riwayat Izin & Cuti</span>
@@ -325,9 +325,9 @@
                     </button>
 
                     <!-- Dropdown content with line connector -->
-                    <div x-show="openSystem" x-collapse
+                    <div x-show="openSystem" x-collapse x-cloak
                         class="mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1"
-                        style="margin-left:20px">
+                        style="margin-left:20px; {{ Request::routeIs('users.*', 'system-logs.*', 'settings') ? '' : 'display: none;' }}">
                         <a href="{{ route('users.index') }}"
                             class="flex items-center justify-between gap-2 py-1.5 text-xs font-medium {{ Request::routeIs('users.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
                             <span>Setting User</span>
@@ -350,7 +350,7 @@
     <!-- Bottom User Account Profile Menu (dropdown lookalike at bottom of sidebar-07) -->
     <div class="pt-2 border-t border-slate-200 dark:border-slate-800 relative" x-data="{ open: false }">
         <!-- Dropdown menu -->
-        <div x-show="open" @click.outside="open = false"
+        <div x-show="open" x-cloak @click.outside="open = false"
             class="absolute bottom-full left-0 w-60 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1.5 z-50 transition-all origin-bottom-left"
             x-transition:enter="transition ease-out duration-100"
             x-transition:enter-start="transform opacity-0 scale-95"

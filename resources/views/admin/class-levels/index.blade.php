@@ -1,4 +1,180 @@
 <x-admin-layout>
+    <!-- Alpine.js Application Logic -->
+    <script>
+        function classLevelApp() {
+            return {
+                modalOpen: false,
+                isEdit: false,
+                saving: false,
+                formData: {
+                    id: null,
+                    name: '',
+                    code: '',
+                    order: 1,
+                    description: '',
+                },
+                confirmModal: {
+                    open: false,
+                    id: null,
+                    title: '',
+                    message: '',
+                    loading: false
+                },
+
+                openCreateModal() {
+                    this.isEdit = false;
+                    this.formData = {
+                        id: null,
+                        name: '',
+                        code: '',
+                        order: 1,
+                        description: '',
+                    };
+                    this.modalOpen = true;
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                openEditModal(id) {
+                    fetch(`/class-levels/${id}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            const l = res.class_level;
+                            this.isEdit = true;
+                            this.formData = {
+                                id: l.id,
+                                name: l.name,
+                                code: l.code,
+                                order: l.order || 1,
+                                description: l.description || '',
+                            };
+                            this.modalOpen = true;
+                            this.$nextTick(() => {
+                                if (window.lucide) lucide.createIcons();
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        if (window.showToastNotification) {
+                            window.showToastNotification("Gagal mengambil data: " + err.message, "error");
+                        } else {
+                            alert("Gagal mengambil data: " + err.message);
+                        }
+                    });
+                },
+
+                submitForm() {
+                    if (this.saving) return;
+                    this.saving = true;
+
+                    const url = this.isEdit ? `/class-levels/${this.formData.id}` : '/class-levels';
+                    const method = this.isEdit ? 'PUT' : 'POST';
+
+                    fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(this.formData)
+                    })
+                    .then(async res => {
+                        this.saving = false;
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            this.modalOpen = false;
+                            if (window.setPendingToast) {
+                                window.setPendingToast(data.message || 'Tingkat kelas berhasil disimpan!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Terjadi kesalahan saat menyimpan.');
+                            if (window.showToastNotification) {
+                                window.showToastNotification(errMsg, 'error');
+                            } else {
+                                alert(errMsg);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.saving = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    });
+                },
+
+                confirmDeleteLevel(id, name) {
+                    this.confirmModal = {
+                        open: true,
+                        id: id,
+                        title: 'Hapus Tingkat Kelas?',
+                        message: `Apakah Anda yakin ingin menghapus Tingkat Kelas <strong>${name}</strong>? Data yang telah dihapus tidak dapat dipulihkan.`,
+                        loading: false
+                    };
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                executeConfirmDelete() {
+                    if (this.confirmModal.loading) return;
+                    this.confirmModal.loading = true;
+
+                    fetch(`/class-levels/${this.confirmModal.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(async res => {
+                        this.confirmModal.loading = false;
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            this.confirmModal.open = false;
+                            if (window.setPendingToast) {
+                                window.setPendingToast(data.message || 'Tingkat kelas berhasil dihapus!', 'success');
+                            }
+                            window.location.reload();
+                        } else {
+                            const errMsg = data.message || 'Gagal menghapus tingkat kelas.';
+                            if (window.showToastNotification) {
+                                window.showToastNotification(errMsg, 'error');
+                            } else {
+                                alert(errMsg);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        this.confirmModal.loading = false;
+                        if (window.showToastNotification) {
+                            window.showToastNotification('Error: ' + err.message, 'error');
+                        } else {
+                            alert('Error: ' + err.message);
+                        }
+                    });
+                }
+            };
+        }
+        window.classLevelApp = classLevelApp;
+        document.addEventListener('alpine:init', () => {
+            if (typeof Alpine !== 'undefined' && Alpine.data) {
+                Alpine.data('classLevelApp', classLevelApp);
+            }
+        });
+    </script>
+
     <div class="p-4 sm:p-5 lg:p-6 space-y-4 lg:space-y-5" x-data="classLevelApp()">
 
         <!-- GREETING / PAGE TITLE -->
@@ -36,7 +212,7 @@
         <!-- STATS CARDS GRID -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Stat 1: Total Tingkat -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Tingkat Kelas</p>
@@ -47,12 +223,12 @@
                     </div>
                 </div>
                 <div class="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
-                    Jenjang terdaftar di SD
+                    Jenjang terdaftar di {{ setting('unit_name', 'SMP Anak Saleh') }}
                 </div>
             </div>
 
             <!-- Stat 2: Total Rombel -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Rombel</p>
@@ -68,7 +244,7 @@
             </div>
 
             <!-- Stat 3: Total Kapasitas -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Kapasitas Kursi</p>
@@ -84,7 +260,7 @@
             </div>
 
             <!-- Stat 4: Total Siswa Aktif -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Siswa Aktif</p>
@@ -301,174 +477,4 @@
         </div>
 
     </div>
-
-    <!-- Alpine.js Application Logic -->
-    <script>
-        function classLevelApp() {
-            return {
-                modalOpen: false,
-                isEdit: false,
-                saving: false,
-                formData: {
-                    id: null,
-                    name: '',
-                    code: '',
-                    order: 1,
-                    description: '',
-                },
-                confirmModal: {
-                    open: false,
-                    id: null,
-                    title: '',
-                    message: '',
-                    loading: false
-                },
-
-                openCreateModal() {
-                    this.isEdit = false;
-                    this.formData = {
-                        id: null,
-                        name: '',
-                        code: '',
-                        order: 1,
-                        description: '',
-                    };
-                    this.modalOpen = true;
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                openEditModal(id) {
-                    fetch(`/class-levels/${id}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            const l = res.class_level;
-                            this.isEdit = true;
-                            this.formData = {
-                                id: l.id,
-                                name: l.name,
-                                code: l.code,
-                                order: l.order || 1,
-                                description: l.description || '',
-                            };
-                            this.modalOpen = true;
-                            this.$nextTick(() => {
-                                if (window.lucide) lucide.createIcons();
-                            });
-                        }
-                    })
-                    .catch(err => {
-                        if (window.showToastNotification) {
-                            window.showToastNotification("Gagal mengambil data: " + err.message, "error");
-                        } else {
-                            alert("Gagal mengambil data: " + err.message);
-                        }
-                    });
-                },
-
-                submitForm() {
-                    if (this.saving) return;
-                    this.saving = true;
-
-                    const url = this.isEdit ? `/class-levels/${this.formData.id}` : '/class-levels';
-                    const method = this.isEdit ? 'PUT' : 'POST';
-
-                    fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(this.formData)
-                    })
-                    .then(async res => {
-                        this.saving = false;
-                        const data = await res.json();
-                        if (res.ok && data.success) {
-                            this.modalOpen = false;
-                            if (window.setPendingToast) {
-                                window.setPendingToast(data.message || 'Tingkat kelas berhasil disimpan!', 'success');
-                            }
-                            window.location.reload();
-                        } else {
-                            const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Terjadi kesalahan saat menyimpan.');
-                            if (window.showToastNotification) {
-                                window.showToastNotification(errMsg, 'error');
-                            } else {
-                                alert(errMsg);
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.saving = false;
-                        if (window.showToastNotification) {
-                            window.showToastNotification('Error: ' + err.message, 'error');
-                        } else {
-                            alert('Error: ' + err.message);
-                        }
-                    });
-                },
-
-                confirmDeleteLevel(id, name) {
-                    this.confirmModal = {
-                        open: true,
-                        id: id,
-                        title: 'Hapus Tingkat Kelas?',
-                        message: `Apakah Anda yakin ingin menghapus Tingkat Kelas <strong>${name}</strong>? Data yang telah dihapus tidak dapat dipulihkan.`,
-                        loading: false
-                    };
-                    this.$nextTick(() => {
-                        if (window.lucide) lucide.createIcons();
-                    });
-                },
-
-                executeConfirmDelete() {
-                    if (this.confirmModal.loading) return;
-                    this.confirmModal.loading = true;
-
-                    fetch(`/class-levels/${this.confirmModal.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(async res => {
-                        this.confirmModal.loading = false;
-                        const data = await res.json();
-                        if (res.ok && data.success) {
-                            this.confirmModal.open = false;
-                            if (window.setPendingToast) {
-                                window.setPendingToast(data.message || 'Tingkat kelas berhasil dihapus!', 'success');
-                            }
-                            window.location.reload();
-                        } else {
-                            const errMsg = data.message || 'Gagal menghapus tingkat kelas.';
-                            if (window.showToastNotification) {
-                                window.showToastNotification(errMsg, 'error');
-                            } else {
-                                alert(errMsg);
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        this.confirmModal.loading = false;
-                        if (window.showToastNotification) {
-                            window.showToastNotification('Error: ' + err.message, 'error');
-                        } else {
-                            alert('Error: ' + err.message);
-                        }
-                    });
-                }
-            }
-        }
-    </script>
 </x-admin-layout>

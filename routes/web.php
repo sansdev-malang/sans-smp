@@ -68,8 +68,8 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
 Route::get('/guru', fn() => redirect()->route('teachers.index'))->name('guru');
 
 // Route Leave Actions
-Route::post('/leaves/{id}/approve', [\App\Http\Controllers\LeaveRequestController::class, 'approve'])->middleware(['auth', 'verified', 'role:admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->name('leaves.approve');
-Route::post('/leaves/{id}/reject', [\App\Http\Controllers\LeaveRequestController::class, 'reject'])->middleware(['auth', 'verified', 'role:admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->name('leaves.reject');
+Route::post('/leaves/{id}/approve', [\App\Http\Controllers\LeaveRequestController::class, 'approve'])->middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->name('leaves.approve');
+Route::post('/leaves/{id}/reject', [\App\Http\Controllers\LeaveRequestController::class, 'reject'])->middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->name('leaves.reject');
 
 
 // SPMB Webhook Receiver (Real-time Push)
@@ -82,12 +82,15 @@ Route::middleware(['auth', 'verified', 'role:super_admin'])->group(function () {
     Route::resource('users', \App\Http\Controllers\UserController::class);
 });
 
-Route::middleware(['auth', 'verified', 'role:admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->group(function () {
 
     // SPMB New Candidate Management
     Route::prefix('spmb')->name('spmb.')->group(function () {
         Route::get('/pendaftar', [SpmbCandidateController::class, 'index'])->name('candidates.index');
+        Route::post('/pendaftar', [SpmbCandidateController::class, 'store'])->name('candidates.store');
         Route::get('/pendaftar/{id}', [SpmbCandidateController::class, 'show'])->name('candidates.show');
+        Route::put('/pendaftar/{id}', [SpmbCandidateController::class, 'update'])->name('candidates.update');
+        Route::delete('/pendaftar/{id}', [SpmbCandidateController::class, 'destroy'])->name('candidates.destroy');
         Route::post('/pendaftar/sync', [SpmbCandidateController::class, 'sync'])->name('candidates.sync');
         Route::get('/pendaftar/{id}/enroll-data', [SpmbCandidateController::class, 'getEnrollData'])->name('candidates.enroll-data');
         Route::post('/pendaftar/{id}/enroll', [SpmbCandidateController::class, 'enroll'])->name('candidates.enroll');
@@ -124,7 +127,7 @@ Route::middleware(['auth', 'verified', 'role:admin_sd,admin_paud,admin_smp,kepal
     Route::post('admin/picket-schedules/swap/{id}/approve-admin', [PicketScheduleController::class, 'approveSwapAdmin'])->name('picket-schedules.swap.approve-admin');
 });
 
-Route::middleware(['auth', 'verified', 'role:employee,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:super_admin,employee,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->group(function () {
     Route::get('attendances', [\App\Http\Controllers\AttendanceController::class, 'index'])->name('attendances.index');
     Route::get('attendances/export', [\App\Http\Controllers\AttendanceController::class, 'export'])->name('attendances.export');
     Route::get('bonus-reports', [\App\Http\Controllers\BonusReportController::class, 'index'])->name('bonus-reports.index');
