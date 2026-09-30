@@ -325,9 +325,6 @@
             </button>
         </div>
 
-        <!-- Anime.js CDN -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js" referrerpolicy="no-referrer"></script>
-
         <!-- Lucide Icons CDN -->
         <script src="https://unpkg.com/lucide@latest"></script>
         <script>
