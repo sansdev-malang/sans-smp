@@ -36,10 +36,12 @@
         </header>
 
         <!-- FILTERS -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm text-left">
-                                                                                    <form method="GET" action="{{ route('users.index') }}" class="flex flex-col md:flex-row flex-wrap items-end gap-4 text-xs w-full">
-                <!-- Search Name/Email -->
-                    <div x-data="{ searchVal: '{{ request('search') }}' }" class="flex items-center w-full search-container bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-inner focus-within:ring-0 focus-within:border-slate-300 dark:focus-within:border-slate-700">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm text-left w-full">
+            <form method="GET" action="{{ route('users.index') }}" class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between text-xs w-full">
+                <!-- Left Side: Search & Filter Role -->
+                <div class="flex flex-wrap items-center gap-2 flex-1">
+                    <!-- Search Name/Email -->
+                    <div x-data="{ searchVal: '{{ request('search') }}' }" class="flex items-center w-full md:w-64 search-container bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-inner focus-within:ring-0 focus-within:border-slate-300 dark:focus-within:border-slate-700">
                         <input type="text" name="search" x-model="searchVal" placeholder="Nama atau email..."
                             style="border: none !important; outline: none !important; box-shadow: none !important;"
                             class="w-full h-9 px-3 text-xs bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-0">
@@ -56,38 +58,27 @@
                         </button>
                     </div>
 
-                <!-- Filter Role -->
-                <div style="flex: 0 0 180px;">
-                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Hak Akses / Role</label>
-                    <select name="role" class="w-full text-xs h-9 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800 cursor-pointer">
+                    <!-- Filter Role -->
+                    <select name="role" onchange="this.form.submit()" class="h-9 px-3 flex-1 sm:flex-initial sm:w-48 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800 cursor-pointer">
                         <option value="">Semua Role</option>
                         <option value="super_admin" {{ request('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
-                        <option value="admin_sd" {{ request('role') === 'admin_sd' ? 'selected' : '' }}>Admin SD</option>
+                        <option value="admin_smp" {{ request('role') === 'admin_smp' ? 'selected' : '' }}>Admin SMP</option>
                         <option value="kepala_sekolah" {{ request('role') === 'kepala_sekolah' ? 'selected' : '' }}>Kepala Sekolah</option>
                         <option value="waka" {{ request('role') === 'waka' ? 'selected' : '' }}>Waka</option>
                         <option value="employee" {{ request('role') === 'employee' ? 'selected' : '' }}>Pegawai (Employee)</option>
                     </select>
+
+                    <!-- Reset Filter Button -->
+                    @if(request()->anyFilled(['search', 'role']) || (request()->filled('per_page') && request('per_page') != 10))
+                        <a href="{{ route('users.index') }}" class="h-9 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center transition-all cursor-pointer" title="Reset Filter">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                        </a>
+                    @endif
                 </div>
 
-                <!-- Actions -->
-                <div style="flex: 0 0 auto; display: flex; align-items: flex-end;">
-                    <div class="flex gap-2 w-full h-9">
-                        <button type="submit" class="px-5 h-full bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-semibold rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                            <i data-lucide="search" class="w-3.5 h-3.5"></i>
-                            Filter
-                        </button>
-                        @if(request()->anyFilled(['search', 'role']))
-                            <a href="{{ route('users.index') }}" class="h-full px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center transition-all cursor-pointer" title="Reset Filter">
-                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            
-                <!-- Per Page -->
-                <div style="margin-left: auto; flex: 0 0 110px;">
-                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Tampilkan</label>
-                    <select name="per_page" onchange="this.form.submit()" class="w-full text-xs h-9 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800 cursor-pointer">
+                <!-- Right Side: Per Page -->
+                <div class="flex items-center gap-2 w-full md:w-auto shrink-0 justify-end">
+                    <select name="per_page" onchange="this.form.submit()" class="h-9 px-3 flex-1 sm:flex-initial sm:w-28 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-800 cursor-pointer">
                         <option value="10" {{ request('per_page', '10') == '10' ? 'selected' : '' }}>10 baris</option>
                         <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25 baris</option>
                         <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 baris</option>
@@ -95,8 +86,6 @@
                         <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>Semua</option>
                     </select>
                 </div>
-
-                
             </form>
         </div>
 
@@ -137,8 +126,8 @@
                                 <td class="px-6 py-4 text-center">
                                     @if($user->role === 'super_admin')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 uppercase">Super Admin</span>
-                                    @elseif(str_starts_with($user->role, 'admin_'))
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 uppercase">Admin Unit</span>
+                                    @elseif($user->role === 'admin_smp' || $user->role === 'admin' || str_starts_with($user->role, 'admin_'))
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 uppercase">Admin SMP</span>
                                     @elseif($user->role === 'kepala_sekolah')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 uppercase">Kepala Sekolah</span>
                                     @elseif($user->role === 'waka')
@@ -232,7 +221,7 @@
                                 <option value="employee">Pegawai (Employee)</option>
                                 <option value="kepala_sekolah">Kepala Sekolah</option>
                                 <option value="waka">Waka</option>
-                                <option value="admin_sd">Admin SD</option>
+                                <option value="admin_smp">Admin SMP</option>
                                 <option value="super_admin">Super Admin</option>
                             </select>
                         </div>
@@ -302,7 +291,7 @@
                                 <option value="employee">Pegawai (Employee)</option>
                                 <option value="kepala_sekolah">Kepala Sekolah</option>
                                 <option value="waka">Waka</option>
-                                <option value="admin_sd">Admin SD</option>
+                                <option value="admin_smp">Admin SMP</option>
                                 <option value="super_admin">Super Admin</option>
                             </select>
                         </div>
