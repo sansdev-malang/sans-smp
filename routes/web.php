@@ -84,7 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'name' => $curUser?->name,
             'email' => $curUser?->email,
             'employee_id' => $curUser?->employee_id,
-            'role' => $isAdmin ? 'super_admin' : 'guru',
+            'role' => $curUser?->role ?? ($isAdmin ? 'super_admin' : 'guru'),
             'unit' => 'smp',
             'timestamp' => time(),
         ]));
