@@ -313,13 +313,13 @@
         <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
             <button type="button" @click="activeTab = 'promotion'"
                 :class="activeTab === 'promotion' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'"
-                class="px-4 py-3 border-b-2 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer">
+                class="px-4 py-3 border-b-2 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400">
                 <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
                 1. Kenaikan Kelas Massal (Kelas 7–8)
             </button>
             <button type="button" @click="activeTab = 'graduation'"
                 :class="activeTab === 'graduation' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'"
-                class="px-4 py-3 border-b-2 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer">
+                class="px-4 py-3 border-b-2 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400">
                 <i data-lucide="graduation-cap" class="w-4 h-4"></i>
                 2. Kelulusan Siswa (Kelas 9)
             </button>
@@ -328,7 +328,7 @@
         <!-- ========================================================= -->
         <!-- TAB 1: KENAIKAN KELAS MASSAL (KELAS 1 - 5) -->
         <!-- ========================================================= -->
-        <div x-show="activeTab === 'promotion'" x-cloak class="space-y-6">
+        <div x-show="activeTab === 'promotion'" class="space-y-6">
 
             <!-- SELECTION TOOLBAR CARD -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
@@ -387,7 +387,7 @@
             </div>
 
             <!-- STUDENT LIST FOR PROMOTION -->
-            <div x-show="sourceClassroomId" x-cloak class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden space-y-0">
+            <div x-show="sourceClassroomId" x-cloak style="display: none;" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden space-y-0">
                 
                 <!-- Table Header & Summary Bar -->
                 <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -525,7 +525,7 @@
         <!-- ========================================================= -->
         <!-- TAB 2: KELULUSAN SISWA KELAS 9 -->
         <!-- ========================================================= -->
-        <div x-show="activeTab === 'graduation'" x-cloak class="space-y-6">
+        <div x-show="activeTab === 'graduation'" x-cloak style="display: none;" class="space-y-6">
 
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
                 <h3 class="font-bold text-slate-900 dark:text-slate-50 text-xs uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -557,7 +557,7 @@
             </div>
 
             <!-- GRADE 9 STUDENTS LIST -->
-            <div x-show="gradClassroomId" x-cloak class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden space-y-0">
+            <div x-show="gradClassroomId" x-cloak style="display: none;" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden space-y-0">
                 
                 <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-blue-50/40 dark:bg-blue-950/20 flex justify-between items-center">
                     <span class="font-bold text-blue-900 dark:text-blue-200 text-xs">
