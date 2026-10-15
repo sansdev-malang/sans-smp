@@ -74,7 +74,7 @@ class User extends Authenticatable
             return true;
         }
 
-        return $this->isActiveHomeroomTeacher() || $this->employee_id !== null;
+        return $this->isActiveHomeroomTeacher();
     }
 
     /**
