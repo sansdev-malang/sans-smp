@@ -237,11 +237,11 @@
                             <span class="text-[9px] uppercase tracking-wider font-semibold px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 leading-none">SSO</span>
                         </a>
 
-                        <!-- Aplikasi SANS CBT -->
+                        <!-- Aplikasi CBT -->
                         <a href="{{ $cbtLink }}" target="_blank"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors group/link">
                             <span class="flex items-center gap-1.5">
-                                <span>Aplikasi SANS CBT</span>
+                                <span>Aplikasi CBT</span>
                                 <i data-lucide="external-link" class="w-3 h-3 text-slate-400 opacity-60 group-hover/link:opacity-100 transition-opacity"></i>
                             </span>
                             <span class="text-[9px] uppercase tracking-wider font-semibold px-1 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50 leading-none">SSO</span>
