@@ -381,12 +381,19 @@ class SpmbCandidateController extends Controller
             // Matching academic year IDs (all semesters for that annual year)
             $matchingYearIds = $matchedYear ? $academicYears->where('name', $matchedYear->name)->pluck('id')->toArray() : [];
 
-            // Get active classrooms
-            $classrooms = Classroom::with(['classLevel', 'homeroomTeacher', 'academicYear'])
+            // Get active classrooms for the target academic year
+            $classroomsQuery = Classroom::with(['classLevel', 'homeroomTeacher', 'academicYear'])
                 ->withCount(['students as active_students_count' => function ($q) {
-                    $q->where('status', 'aktif');
+                    $q->where('status', 'aktif')
+                      ->whereColumn('students.academic_year_id', 'classrooms.academic_year_id');
                 }])
-                ->where('classrooms.is_active', true)
+                ->where('classrooms.is_active', true);
+
+            if (!empty($matchingYearIds)) {
+                $classroomsQuery->whereIn('classrooms.academic_year_id', $matchingYearIds);
+            }
+
+            $classrooms = $classroomsQuery
                 ->join('class_levels', 'classrooms.class_level_id', '=', 'class_levels.id')
                 ->orderBy('class_levels.order', 'asc')
                 ->orderBy('classrooms.code', 'asc')
@@ -394,13 +401,7 @@ class SpmbCandidateController extends Controller
                 ->select('classrooms.*')
                 ->get();
 
-            // Filter classrooms for the matched academic year if available
-            $matchedClassrooms = $classrooms->filter(function($cr) use ($matchingYearIds) {
-                return empty($matchingYearIds) || in_array($cr->academic_year_id, $matchingYearIds);
-            })->values();
-
-            // If no classrooms matched for future year, fallback to all active classrooms
-            $finalClassrooms = $matchedClassrooms->isNotEmpty() ? $matchedClassrooms : $classrooms;
+            $finalClassrooms = $classrooms;
 
             // Generate suggested NIS for SMP (e.g. 26.SMP.001)
             $yearDigits = $matchedYear ? substr(explode('/', $matchedYear->name)[0] ?? '2026', -2) : date('y');
@@ -460,7 +461,18 @@ class SpmbCandidateController extends Controller
             ]);
 
             return DB::transaction(function () use ($candidate, $validated) {
-                $classroom = Classroom::with(['classLevel', 'homeroomTeacher'])->find($validated['classroom_id']);
+                $classroom = Classroom::with(['classLevel', 'homeroomTeacher', 'academicYear'])->find($validated['classroom_id']);
+
+                if ($classroom && $classroom->academic_year_id) {
+                    $reqAy = AcademicYear::find($validated['academic_year_id']);
+                    $crAy = $classroom->academicYear;
+                    if ($crAy && $reqAy && $crAy->name !== $reqAy->name && $crAy->id != $reqAy->id) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Kelas yang dipilih ({$classroom->name}) terdaftar pada tahun ajaran {$crAy->name}, berbeda dengan tahun ajaran pendaftaran ({$reqAy->name})."
+                        ], 422);
+                    }
+                }
 
                 $studentData = [
                     'nis' => $validated['nis'],

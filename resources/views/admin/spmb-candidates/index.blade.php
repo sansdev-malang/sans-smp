@@ -208,7 +208,7 @@
                         return false;
                     });
 
-                    return matched.length > 0 ? matched : this.enrollData.all_classrooms;
+                    return matched;
                 },
 
                 onEnrollYearChange() {
@@ -1283,7 +1283,7 @@
                             </div>
                             <div>
                                 <h3 class="text-base font-bold text-slate-900 dark:text-slate-50">
-                                    Penerimaan Siswa Baru SD
+                                    Penerimaan Siswa Baru SMP
                                 </h3>
                                 <p class="text-xs text-slate-400 mt-0.5">Penetapan NIS dan penempatan rombongan belajar.</p>
                             </div>
@@ -1315,9 +1315,9 @@
                             <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                 Nomor Induk Siswa (NIS) <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" x-model="enrollForm.nis" required placeholder="Contoh: 27.SD.001"
+                            <input type="text" x-model="enrollForm.nis" required placeholder="Contoh: 27.SMP.001"
                                 class="w-full h-9 px-3 text-xs font-mono font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-purple-700 dark:text-purple-300">
-                            <p class="text-[10px] text-slate-400 mt-1">Saran format otomatis berdasarkan tahun masuk dan nomor urut SD.</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Saran format otomatis berdasarkan tahun masuk dan nomor urut SMP.</p>
                         </div>
 
                         <!-- Tahun Pelajaran & Rombel Grid -->
@@ -1340,7 +1340,7 @@
                                 </label>
                                 <select x-model="enrollForm.classroom_id" required
                                     class="w-full h-9 px-3 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 dark:text-slate-50 cursor-pointer">
-                                    <option value="">Pilih Rombel...</option>
+                                    <option value="" x-text="getAvailableClassrooms().length === 0 ? '⚠️ Belum ada rombel pada tahun ajaran ini' : 'Pilih Rombel...'"></option>
                                     <template x-for="r in getAvailableClassrooms()" :key="r.id">
                                         <option :value="r.id" x-text="(r.full_name || (r.code ? r.code + ' ' + r.name : r.name)) + ' (' + (r.class_level ? r.class_level.name : '') + ') • ' + (r.active_students_count ?? 0) + '/' + (r.capacity ?? 30) + ' siswa'"></option>
                                     </template>
