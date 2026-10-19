@@ -72,7 +72,7 @@ Route::post('/leaves/{id}/approve', [\App\Http\Controllers\LeaveRequestControlle
 Route::post('/leaves/{id}/reject', [\App\Http\Controllers\LeaveRequestController::class, 'reject'])->middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->name('leaves.reject');
 
 
-// Rekap & Hasil Rapor (1-Click SSO to SANS Rapor)
+// Rekap & Hasil Rapor (1-Click SSO to SAANS Rapor)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/rapor', function () {
         $curUser = auth()->user();
@@ -206,6 +206,7 @@ Route::middleware(['auth', 'verified', 'role:super_admin,employee,admin_sd,admin
     Route::get('attendances/export', [\App\Http\Controllers\AttendanceController::class, 'export'])->name('attendances.export');
     Route::get('bonus-reports', [\App\Http\Controllers\BonusReportController::class, 'index'])->name('bonus-reports.index');
     Route::get('bonus-reports/export', [\App\Http\Controllers\BonusReportController::class, 'export'])->name('bonus-reports.export');
+    Route::get('attendance-percentage-reports', [\App\Http\Controllers\AttendancePercentageReportController::class, 'index'])->name('attendance-percentage-reports.index');
     Route::get('my-attendance', [\App\Http\Controllers\MyAttendanceController::class, 'index'])->name('my-attendance');
     Route::resource('my-leaves', \App\Http\Controllers\MyLeaveRequestController::class);
     Route::get('announcements/{announcement}/download', [\App\Http\Controllers\AnnouncementController::class, 'download'])->name('announcements.download');

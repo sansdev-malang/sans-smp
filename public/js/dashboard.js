@@ -1,5 +1,5 @@
 /**
- * SANS Malang School Information System
+ * SAANS Malang School Information System
  * Dashboard Interactivity & Performance Optimizations
  * (Content & card entry animations removed for instant, smooth rendering)
  */

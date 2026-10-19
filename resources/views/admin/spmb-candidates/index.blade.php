@@ -490,13 +490,10 @@
                         <i data-lucide="user-plus" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                        <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">
                             SPMB
-                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 font-semibold border border-emerald-200 dark:border-emerald-800">
-                                {{ setting('unit_name', 'SMP Anak Saleh') }}
-                            </span>
                         </h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Data pendaftar dan calon murid yang masuk dari sistem pendaftaran SPMB Pusat.</p>
+                        <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">Data pendaftar dan calon murid yang masuk dari sistem pendaftaran SPMB Pusat.</p>
                     </div>
                 </div>
             </div>

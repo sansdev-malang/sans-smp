@@ -100,7 +100,7 @@ class SettingController extends Controller
     public function syncPwaIconsAndManifest(): void
     {
         try {
-            $appName = Setting::get('app_name', config('app.name', 'SANS SMP'));
+            $appName = Setting::get('app_name', config('app.name', 'SAANS SMP'));
             $logoRelativePath = Setting::get('app_logo');
             $iconDir = public_path('icons');
 
@@ -219,7 +219,7 @@ class SettingController extends Controller
     }
 
     /**
-     * Test connection to SANS Rapor database & system.
+     * Test connection to SAANS Rapor database & system.
      */
     public function testRaporConnection(Request $request)
     {
@@ -248,13 +248,13 @@ class SettingController extends Controller
             'db_error' => $dbError,
             'rapor_url' => $raporUrl,
             'message' => $dbStatus 
-                ? "Koneksi ke Database SANS Rapor ('{$raporDb}') berhasil terhubung!" 
-                : "Gagal terhubung ke Database SANS Rapor: {$dbError}",
+                ? "Koneksi ke Database SAANS Rapor ('{$raporDb}') berhasil terhubung!" 
+                : "Gagal terhubung ke Database SAANS Rapor: {$dbError}",
         ]);
     }
 
     /**
-     * Test connection to SANS CBT database & system.
+     * Test connection to SAANS CBT database & system.
      */
     public function testCbtConnection(Request $request)
     {
@@ -283,8 +283,8 @@ class SettingController extends Controller
             'db_error' => $dbError,
             'cbt_url' => $cbtUrl,
             'message' => $dbStatus 
-                ? "Koneksi ke Database SANS CBT ('{$cbtDb}') berhasil terhubung!" 
-                : "Gagal terhubung ke Database SANS CBT: {$dbError}",
+                ? "Koneksi ke Database SAANS CBT ('{$cbtDb}') berhasil terhubung!" 
+                : "Gagal terhubung ke Database SAANS CBT: {$dbError}",
         ]);
     }
 }

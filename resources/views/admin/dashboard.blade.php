@@ -5,11 +5,11 @@
         <!-- GREETING / PAGE TITLE -->
         <section class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="flex flex-col gap-0.5">
-                <h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 font-nasalization">Dashboard</h2>
+                <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50 font-nasalization">Dashboard</h2>
                 @if($isAdmin)
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Selamat datang kembali! Aktivitas sekolah terpantau kondusif.</p>
+                    <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Selamat datang kembali! Aktivitas sekolah terpantau kondusif.</p>
                 @else
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Selamat datang kembali, {{ auth()->user()->name }}! Pantau performa kehadiran harian Anda disini.</p>
+                    <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Selamat datang kembali, {{ auth()->user()->name }}! Pantau performa kehadiran harian Anda disini.</p>
                 @endif
             </div>
         </section>
@@ -159,21 +159,21 @@
                     </div>
                 </div>
 
-                <!-- Pegawai Card 4: Estimasi Bonus -->
-                <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <!-- Pegawai Card 4: Estimasi Uang Kehadiran -->
+                <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 sm:p-3.5 lg:p-4 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
                     <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estimasi Bonus</p>
-                            <h3 class="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-1">
+                        <div class="min-w-0 pr-1">
+                            <p class="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Uang Kehadiran</p>
+                            <h3 class="text-lg sm:text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-1">
                                 Rp {{ number_format($myReport['bonus_nominal'] ?? 0, 0, ',', '.') }}
                             </h3>
                         </div>
-                        <div class="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                            <i data-lucide="award" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
+                        <div class="p-1.5 sm:p-2 bg-emerald-50 dark:bg-emerald-950/50 rounded-lg shrink-0">
+                            <i data-lucide="banknote" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400"></i>
                         </div>
                     </div>
-                    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                        Akumulasi bonus bulan ini
+                    <div class="mt-2.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                        Akumulasi uang kehadiran bulan ini
                     </div>
                 </div>
             @endif
@@ -605,7 +605,7 @@
                                                             <span class="text-indigo-650 dark:text-indigo-400 font-bold">{{ $pt['percent'] }}% Hadir</span>
                                                         </div>
                                                         <div>Pegawai Hadir: <span class="font-semibold text-slate-950 dark:text-white">{{ $pt['count'] }} orang</span></div>
-                                                        <div class="text-[8px] text-slate-550 dark:text-slate-400 mt-0.5">Basis data kepegawaian SANS SMP</div>
+                                                        <div class="text-[8px] text-slate-550 dark:text-slate-400 mt-0.5">Basis data kepegawaian SAANS SMP</div>
                                                         <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white dark:bg-slate-955 border-r border-b border-slate-200 dark:border-slate-800/80 rotate-45"></div>
                                                     </div>
                                                 </foreignObject>
@@ -719,62 +719,316 @@
             </div>
         </section>
 
-        <!-- QUICK ACTIONS & ACTIVITY FEED -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        @if($isAdmin)
+        <!-- RIWAYAT IZIN/CUTI PEGAWAI & AKTIVITAS KEHADIRAN TERKINI (ADMIN ONLY) -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
             
-            <!-- Quick Actions Grid -->
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4">Aksi Cepat</h3>
-                <div class="grid grid-cols-2 gap-2">
-                    @if($isAdmin)
-                        <button onclick="window.location='{{ route('students.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="user-plus" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Tambah Siswa</span>
-                        </button>
-                        <button onclick="window.location='{{ route('employees.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="users" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Data Pegawai</span>
-                        </button>
-                        <button onclick="window.location='{{ route('leaves.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="file-check-2" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Verifikasi Cuti</span>
-                        </button>
-                        <button onclick="window.location='{{ route('attendances.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="history" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Riwayat Kehadiran</span>
-                        </button>
-                        <button onclick="window.location='{{ route('zkteco-devices.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="hard-drive" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Mesin Absensi</span>
-                        </button>
-                        <button onclick="window.location='{{ route('picket-schedules.admin') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 mt-1.5 text-center leading-tight">Jadwal Piket</span>
-                        </button>
-                    @else
-                        <button onclick="window.location='{{ route('my-leaves.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-650 dark:text-indigo-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Ajukan Cuti/Izin</span>
-                        </button>
-                        <button onclick="window.location='{{ route('attendances.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="calendar-check" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Data Absensi</span>
-                        </button>
-                        <button onclick="window.location='{{ route('my-employee-profile.edit') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="user" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Profile</span>
-                        </button>
-                        <button onclick="window.location='{{ route('payslips.index') }}'" class="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg group transition-all duration-100 cursor-pointer">
-                            <i data-lucide="receipt" class="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:scale-105 transition-transform"></i>
-                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1.5">Lihat Slip Gaji</span>
-                        </button>
-                    @endif
+            <!-- Card 1: Riwayat Izin/Cuti Pegawai -->
+            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-500"></i>
+                        <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-nasalization">Riwayat Izin/Cuti Pegawai</h3>
+                    </div>
+                    <a href="{{ route('leaves.index') }}" class="text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Lihat Semua</a>
+                </div>
+                <div class="flex-1 overflow-y-auto max-h-[340px]">
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        @if(isset($recentLeaves) && count($recentLeaves) > 0)
+                            @foreach($recentLeaves as $leave)
+                                @php
+                                    $empName = $leave->employee->name ?? 'Pegawai';
+                                    $empPos = $leave->employee->position ?? null;
+                                    $start = \Carbon\Carbon::parse($leave->start_date);
+                                    $end = \Carbon\Carbon::parse($leave->end_date);
+                                    $diff = $start->diffInDays($end) + 1;
+                                    $rangeString = $start->translatedFormat('d M Y');
+                                    if ($start->format('Y-m-d') !== $end->format('Y-m-d')) {
+                                        $rangeString .= ' s/d ' . $end->translatedFormat('d M Y');
+                                    }
+                                    $statusClass = [
+                                        'Pending' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/40',
+                                        'Approved' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/40',
+                                        'Rejected' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/40',
+                                    ][$leave->status] ?? 'bg-slate-50 text-slate-700 border-slate-200';
+                                @endphp
+                                <a href="{{ route('leaves.index') }}" class="block p-3.5 sm:p-4 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-all border-b last:border-b-0 border-slate-100 dark:border-slate-800/40">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                                        <!-- Left Side: Employee Details & Leave Info -->
+                                        <div class="flex-1 min-w-0 text-left">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <p class="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 hover:text-indigo-600 transition-colors truncate">
+                                                    {{ $empName }}
+                                                </p>
+                                                @if($empPos)
+                                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full border uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800/40 shrink-0">
+                                                        {{ $empPos }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            
+                                            <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-slate-600 dark:text-slate-400">
+                                                <span class="flex items-center gap-1">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                                                    Mengajukan <strong class="text-slate-800 dark:text-slate-200 font-semibold">{{ $leave->leaveType->name ?? $leave->type }}</strong>
+                                                </span>
+                                                <span class="text-slate-300 dark:text-slate-700">|</span>
+                                                <span class="text-slate-500 dark:text-slate-400">
+                                                    {{ $rangeString }} <span class="font-semibold text-slate-700 dark:text-slate-300">({{ $diff }} Hari)</span>
+                                                </span>
+                                            </div>
+                                            
+                                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
+                                                <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                Diajukan pada: <span class="font-mono text-slate-500 dark:text-slate-400 font-semibold">{{ \Carbon\Carbon::parse($leave->created_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                                            </p>
+                                        </div>
+
+                                        <!-- Right Side: Status Badge -->
+                                        <div class="flex items-center sm:items-end justify-between sm:justify-center sm:flex-col gap-1.5 shrink-0">
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1.5 tracking-wider {{ $statusClass }}">
+                                                <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $leave->status === 'Pending' ? 'bg-amber-500' : ($leave->status === 'Approved' ? 'bg-emerald-500' : 'bg-rose-500') }}"></span>
+                                                {{ $leave->status }}
+                                            </span>
+                                            
+                                            @if($leave->notes)
+                                                <span class="text-[9px] text-slate-400 dark:text-slate-500 truncate max-w-[140px] italic" title="{{ $leave->notes }}">
+                                                    "{{ $leave->notes }}"
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </a>
+                            @endforeach
+                        @else
+                            <div class="p-8 text-center text-slate-400">
+                                <p class="text-xs">Belum ada riwayat pengajuan izin/cuti.</p>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 
-            <!-- Jadwal Piket Saya Card -->
+            <!-- Card 2: Aktivitas Kehadiran Terkini -->
+            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+                    <div class="flex items-center gap-2">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <i data-lucide="activity" class="w-4 h-4 text-emerald-500"></i>
+                        <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-nasalization">Aktivitas Kehadiran Terkini</h3>
+                    </div>
+                    <span class="text-[10px] sm:text-[11px] text-slate-400 font-medium">Hari ini, {{ now()->translatedFormat('d M Y') }}</span>
+                </div>
+                <div class="p-4 sm:p-5 flex-1 overflow-hidden flex flex-col">
+                    <div class="max-h-[340px] overflow-y-auto pr-2 custom-scrollbar flex-1">
+                        @if(isset($recentAttendancesToday) && count($recentAttendancesToday) > 0)
+                            <div class="border-l-2 border-slate-200 dark:border-slate-800 ml-2 space-y-4">
+                                @foreach($recentAttendancesToday as $att)
+                                    @php
+                                        $isCheckout = !empty($att['check_out']);
+                                        $empName = $att['name'] ?? 'Pegawai';
+                                        $empPhoto = $att['photo'] ?? null;
+                                        $photoSrc = null;
+                                        if ($empPhoto) {
+                                            $photoSrc = str_starts_with($empPhoto, 'http') ? $empPhoto : asset('storage/' . ltrim($empPhoto, '/'));
+                                        }
+                                    @endphp
+                                    <div class="relative pl-5">
+                                        <span class="absolute -left-[9px] top-2 w-3.5 h-3.5 rounded-full border-4 border-white dark:border-slate-900 {{ $isCheckout ? 'bg-blue-500' : 'bg-emerald-500' }}"></span>
+                                        <div class="flex items-center gap-3">
+                                            <div class="relative shrink-0 w-8 h-8">
+                                                @if($photoSrc)
+                                                    <img src="{{ $photoSrc }}" onerror="this.remove(); document.getElementById('att-init-{{ $loop->index }}').classList.remove('hidden');" class="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                                                @endif
+                                                <div id="att-init-{{ $loop->index }}" class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 shrink-0 {{ $photoSrc ? 'hidden' : '' }}">
+                                                    {{ strtoupper(substr($empName, 0, 2)) }}
+                                                </div>
+                                            </div>
+                                            <div class="min-w-0 flex-1 text-left">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">{{ $empName }}</span>
+                                                    @if(!empty($att['position']))
+                                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">({{ $att['position'] }})</span>
+                                                    @endif
+                                                </div>
+                                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                    @if(!empty($att['check_in']))
+                                                        Hadir <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $att['check_in'] }}</span>
+                                                    @endif
+                                                    @if(!empty($att['check_out']))
+                                                        @if(!empty($att['check_in']))
+                                                             <span class="mx-1">&bull;</span>
+                                                        @endif
+                                                        Pulang <span class="font-bold text-blue-600 dark:text-blue-400">{{ $att['check_out'] }}</span>
+                                                    @endif
+                                                    @if(!empty($att['shift_name']))
+                                                        <span class="text-slate-400 ml-1">({{ $att['shift_name'] }})</span>
+                                                    @endif
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-12">
+                                <i data-lucide="clock" class="w-7 h-7 text-slate-300 dark:text-slate-700 mx-auto mb-2"></i>
+                                <p class="text-xs text-slate-400">Belum ada aktivitas kehadiran terekam hari ini.</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </section>
+        @else
+        <!-- AKSI CEPAT & RIWAYAT IZIN/CUTI SAYA (PEGAWAI ONLY) -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
+            
+            <!-- Card 1: Aksi Cepat -->
+            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+                        <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-nasalization">Aksi Cepat</h3>
+                    </div>
+                    <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500">Pintasan Layanan</span>
+                </div>
+                <div class="p-4 sm:p-5 flex-1 flex flex-col justify-center">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        
+                        <!-- 1. Ajukan Izin / Cuti -->
+                        <a href="{{ route('my-leaves.index') }}" class="group flex items-start gap-3 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all duration-200 shadow-2xs hover:shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                <i data-lucide="file-signature" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0 text-left">
+                                <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-tight">Ajukan Izin / Cuti</h4>
+                                <p class="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">Formulir izin & cuti mandiri</p>
+                            </div>
+                        </a>
+
+                        <!-- 2. Presensi & Kalender -->
+                        <a href="{{ route('attendances.index') }}" class="group flex items-start gap-3 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 hover:border-emerald-200 dark:hover:border-emerald-900/50 transition-all duration-200 shadow-2xs hover:shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                                <i data-lucide="calendar-check-2" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0 text-left">
+                                <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-tight">Presensi & Kalender</h4>
+                                <p class="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">Riwayat & jadwal kerja</p>
+                            </div>
+                        </a>
+
+                        <!-- 3. Slip Gaji -->
+                        <a href="{{ route('payslips.index') }}" class="group flex items-start gap-3 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-sky-50/60 dark:hover:bg-sky-950/30 hover:border-sky-200 dark:hover:border-sky-900/50 transition-all duration-200 shadow-2xs hover:shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-100 dark:border-sky-800/50 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-sky-600 group-hover:text-white transition-all">
+                                <i data-lucide="receipt" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0 text-left">
+                                <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-tight">Slip Gaji</h4>
+                                <p class="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">Lihat & unduh rincian gaji</p>
+                            </div>
+                        </a>
+
+                        <!-- 4. Jadwal Piket -->
+                        <a href="{{ route('picket-schedules.index') }}" class="group flex items-start gap-3 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 hover:border-amber-200 dark:hover:border-amber-900/50 transition-all duration-200 shadow-2xs hover:shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-100 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-amber-600 group-hover:text-white transition-all">
+                                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0 text-left">
+                                <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors leading-tight">Jadwal Piket</h4>
+                                <p class="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">Roster & area tugas piket</p>
+                            </div>
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Riwayat Izin/Cuti Saya -->
+            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-500"></i>
+                        <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-nasalization">Riwayat Izin/Cuti Saya</h3>
+                    </div>
+                    <a href="{{ route('my-leaves.index') }}" class="text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Lihat Semua</a>
+                </div>
+                <div class="flex-1 overflow-y-auto max-h-[340px]">
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        @if(isset($myRecentLeaves) && count($myRecentLeaves) > 0)
+                            @foreach($myRecentLeaves as $leave)
+                                @php
+                                    $start = \Carbon\Carbon::parse($leave->start_date);
+                                    $end = \Carbon\Carbon::parse($leave->end_date);
+                                    $diff = $start->diffInDays($end) + 1;
+                                    $rangeString = $start->translatedFormat('d M Y');
+                                    if ($start->format('Y-m-d') !== $end->format('Y-m-d')) {
+                                        $rangeString .= ' s/d ' . $end->translatedFormat('d M Y');
+                                    }
+                                    $statusClass = [
+                                        'Pending' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/40',
+                                        'Approved' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/40',
+                                        'Rejected' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/40',
+                                    ][$leave->status] ?? 'bg-slate-50 text-slate-700 border-slate-200';
+                                @endphp
+                                <a href="{{ route('my-leaves.index') }}" class="block p-3.5 sm:p-4 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-all border-b last:border-b-0 border-slate-100 dark:border-slate-800/40">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                                        <!-- Left Side: Leave Info -->
+                                        <div class="flex-1 min-w-0 text-left">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <p class="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 hover:text-indigo-600 transition-colors truncate">
+                                                    {{ $leave->leaveType->name ?? $leave->type }}
+                                                </p>
+                                            </div>
+                                            
+                                            <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-slate-600 dark:text-slate-400">
+                                                <span class="text-slate-500 dark:text-slate-400">
+                                                    {{ $rangeString }} <span class="font-semibold text-slate-700 dark:text-slate-300">({{ $diff }} Hari)</span>
+                                                </span>
+                                            </div>
+                                            
+                                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
+                                                <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                Diajukan pada: <span class="font-mono text-slate-500 dark:text-slate-400 font-semibold">{{ \Carbon\Carbon::parse($leave->created_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                                            </p>
+                                        </div>
+
+                                        <!-- Right Side: Status Badge -->
+                                        <div class="flex items-center sm:items-end justify-between sm:justify-center sm:flex-col gap-1.5 shrink-0">
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1.5 tracking-wider {{ $statusClass }}">
+                                                <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $leave->status === 'Pending' ? 'bg-amber-500' : ($leave->status === 'Approved' ? 'bg-emerald-500' : 'bg-rose-500') }}"></span>
+                                                {{ $leave->status }}
+                                            </span>
+                                            
+                                            @if($leave->notes)
+                                                <span class="text-[9px] text-slate-400 dark:text-slate-500 truncate max-w-[140px] italic" title="{{ $leave->notes }}">
+                                                    "{{ $leave->notes }}"
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </a>
+                            @endforeach
+                        @else
+                            <div class="p-8 text-center text-slate-400">
+                                <p class="text-xs">Belum ada riwayat pengajuan izin/cuti.</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </section>
+        @endif
+
+        <!-- ACTIVITY FEED & JADWAL PIKET -->
+        @if($isAdmin || (isset($myPicketSchedules) && $myPicketSchedules->isNotEmpty()))
+        <section class="grid grid-cols-1 {{ ($isAdmin && isset($myPicketSchedules) && $myPicketSchedules->isNotEmpty()) ? 'lg:grid-cols-3' : 'lg:grid-cols-1' }} gap-4 sm:gap-5 lg:gap-6">
             @if(isset($myPicketSchedules) && $myPicketSchedules->isNotEmpty())
-            <div class="animate-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between" x-data="{ openJobs: null }">
+            <!-- Jadwal Piket Saya Card -->
+            <div class="animate-card {{ $isAdmin ? '' : 'lg:col-span-1' }} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between" x-data="{ openJobs: null }">
                 <div>
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4 font-nasalization">Jadwal Piket Saya</h3>
                     
@@ -895,59 +1149,36 @@
             </div>
             @endif
 
-            <!-- Recent Activity Logs -->
-            <div class="animate-card {{ (!isset($myPicketSchedules) || $myPicketSchedules->isEmpty()) ? 'lg:col-span-2' : 'lg:col-span-1' }} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
-                @if($isAdmin)
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4">Log Aktivitas Terbaru</h3>
-                     <div class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin">
-                        @forelse($activityLogs as $log)
-                            <div class="flex items-start justify-between gap-3 py-1 border-b border-slate-50 dark:border-slate-900/60 pb-3 last:border-b-0 last:pb-0">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-7 h-7 rounded-lg {{ $log['icon_color'] }} flex items-center justify-center shrink-0">
-                                        <i data-lucide="{{ $log['icon'] }}" class="w-3.5 h-3.5"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $log['title'] }}</p>
-                                        <p class="text-[10px] text-slate-550 mt-0.5 leading-snug break-words pr-2">{{ $log['description'] }}</p>
-                                        <!-- Time on mobile -->
-                                        <span class="mobile-time text-[9px] text-slate-400 dark:text-slate-500 font-medium block mt-1">{{ $log['time']->diffForHumans() }}</span>
-                                    </div>
+            @if($isAdmin)
+            <!-- Recent Activity Logs (Admin Only) -->
+            <div class="animate-card {{ (isset($myPicketSchedules) && $myPicketSchedules->isNotEmpty()) ? 'lg:col-span-2' : '' }} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4 font-nasalization">Log Aktivitas Terbaru</h3>
+                <div class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin">
+                    @forelse($activityLogs as $log)
+                        <div class="flex items-start justify-between gap-3 py-1 border-b border-slate-50 dark:border-slate-900/60 pb-3 last:border-b-0 last:pb-0">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-7 h-7 rounded-lg {{ $log['icon_color'] }} flex items-center justify-center shrink-0">
+                                    <i data-lucide="{{ $log['icon'] }}" class="w-3.5 h-3.5"></i>
                                 </div>
-                                <!-- Time on desktop -->
-                                <span class="desktop-time text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">{{ $log['time']->diffForHumans() }}</span>
-                            </div>
-                        @empty
-                            <div class="text-xs text-slate-550 text-center py-6">
-                                <i data-lucide="activity" class="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2"></i>
-                                Belum ada aktivitas terbaru hari ini.
-                            </div>
-                        @endforelse
-                    </div>
-                @else
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-4 font-nasalization">Aktivitas Saya (Pengajuan Terakhir)</h3>
-                     <div class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin">
-                        @forelse($myRecentLeaves as $leave)
-                            <div class="flex items-start justify-between gap-3 py-1 border-b border-slate-50 dark:border-slate-900/60 pb-3">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-655 dark:text-slate-400 shrink-0">
-                                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Pengajuan Izin / Cuti ({{ $leave->type }})</p>
-                                        <!-- Time on mobile -->
-                                        <span class="mobile-time text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">{{ $leave->created_at->translatedFormat('d M Y, H:i') }}</span>
-                                    </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $log['title'] }}</p>
+                                    <p class="text-[10px] text-slate-500 mt-0.5 leading-snug break-words pr-2">{{ $log['description'] }}</p>
+                                    <span class="mobile-time text-[9px] text-slate-400 dark:text-slate-500 font-medium block mt-1">{{ $log['time']->diffForHumans() }}</span>
                                 </div>
-                                <!-- Time on desktop -->
-                                <span class="desktop-time text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">{{ $leave->created_at->translatedFormat('d M Y, H:i') }}</span>
                             </div>
-                        @empty
-                            <div class="text-xs text-slate-550 text-center py-4">Belum ada riwayat aktivitas pengajuan cuti/izin.</div>
-                        @endforelse
-                    </div>
-                @endif
+                            <span class="desktop-time text-[10px] text-slate-400 dark:text-slate-500 font-medium shrink-0 mt-0.5">{{ $log['time']->diffForHumans() }}</span>
+                        </div>
+                    @empty
+                        <div class="text-xs text-slate-500 text-center py-6">
+                            <i data-lucide="activity" class="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2"></i>
+                            Belum ada aktivitas terbaru hari ini.
+                        </div>
+                    @endforelse
+                </div>
             </div>
+            @endif
         </section>
+        @endif
 
     </div>
 </x-admin-layout>

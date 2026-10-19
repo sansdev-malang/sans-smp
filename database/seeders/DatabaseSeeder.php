@@ -52,9 +52,9 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-                \App\Models\Setting::set('app_name', 'SANS SMP');
-        \App\Models\Setting::set('unit_name', 'SANS SMP Malang');
-        \App\Models\Setting::set('app_copyright', '© 2026 SANS.dev SMP School Information System. All rights reserved.');
+        \App\Models\Setting::set('app_name', 'SAANS SMP');
+        \App\Models\Setting::set('unit_name', 'SAANS SMP Malang');
+        \App\Models\Setting::set('app_copyright', '© 2026 SAANS SMP School Information System. All rights reserved.');
 
         $this->call([
             EmployeeSeeder::class,

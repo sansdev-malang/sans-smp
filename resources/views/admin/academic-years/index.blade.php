@@ -255,13 +255,10 @@
                         <i data-lucide="calendar-range" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 flex items-center gap-2">
-                            Tahun Pelajaran
-                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400 font-semibold border border-indigo-200 dark:border-indigo-800">
-                                Master Akademik
-                            </span>
+                        <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                            Tahun Pelajaran & Semester
                         </h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Kelola master tahun pelajaran, semester, dan status periode aktif di {{ setting('unit_name', 'SMP Anak Saleh') }} sesuai standar Dapodik.</p>
+                        <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kelola master tahun pelajaran, semester, dan status periode aktif di {{ setting('unit_name', 'SMP Anak Saleh') }} sesuai standar Dapodik.</p>
                     </div>
                 </div>
             </div>
