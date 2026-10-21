@@ -147,7 +147,7 @@
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Izin & Cuti</p>
                             <h3 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mt-1">
-                                <span>{{ $totalLeavesThisYear }}</span> Hari
+                                <span>{{ $totalLeavesThisMonth ?? $totalLeavesThisYear ?? 0 }}</span> Hari
                             </h3>
                         </div>
                         <div class="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
@@ -155,7 +155,7 @@
                         </div>
                     </div>
                     <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                        Akumulasi persetujuan tahun ini
+                        Akumulasi persetujuan siklus aktif
                     </div>
                 </div>
 
