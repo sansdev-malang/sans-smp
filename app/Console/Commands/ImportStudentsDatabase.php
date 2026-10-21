@@ -12,6 +12,7 @@ use Illuminate\Console\Command;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ImportStudentsDatabase extends Command
 {
@@ -20,14 +21,14 @@ class ImportStudentsDatabase extends Command
      *
      * @var string
      */
-    protected $signature = 'students:import-database {file? : Path to the excel file}';
+    protected $signature = 'students:import-database {file? : Path to the master excel file (defaults to public/DATABASE MURID SMP 2026-2027.xlsx)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Import official student database and classrooms from master Excel 2026/2027 for SMP';
+    protected $description = 'Import official student database, classrooms, and enrich with Google Form survey responses for SMP';
 
     /**
      * Execute the console command.
@@ -41,7 +42,9 @@ class ImportStudentsDatabase extends Command
             return 1;
         }
 
-        $this->info("Membaca file Excel: {$filePath}...");
+        $this->info("==================================================================");
+        $this->info(" MEMBACA MASTER DATABASE SISWA SMP: {$filePath}");
+        $this->info("==================================================================");
 
         $reader = IOFactory::createReaderForFile($filePath);
         $reader->setReadDataOnly(true);
@@ -65,7 +68,7 @@ class ImportStudentsDatabase extends Command
                 ]
             )))));
 
-        $this->info("Tahun Ajaran Terpilih: {$academicYear->name} (ID: {$academicYear->id})");
+        $this->info("Tahun Ajaran Aktif: {$academicYear->name} (ID: {$academicYear->id})");
 
         // 2. Setup 3 Tingkat Kelas SMP (7, 8, 9)
         $levels = [];
@@ -97,7 +100,6 @@ class ImportStudentsDatabase extends Command
             '9B' => ['level' => '9', 'name' => '9B - Singhasari', 'code' => '9B', 'wali' => null, 'gpk' => null],
         ];
 
-        // Load active employees for matching homeroom and GPK
         $employees = Employee::whereIn('status', ['Active', 'aktif', 'active', 'Aktif'])->get();
 
         $classroomMap = [];
@@ -124,7 +126,7 @@ class ImportStudentsDatabase extends Command
                 ]
             );
 
-            // Register various aliases for robust matching
+            // Register aliases for robust matching
             $classroomMap[$code] = $classroom;
             $classroomMap[strtoupper($def['name'])] = $classroom;
             $classroomMap[strtoupper($def['code'])] = $classroom;
@@ -137,7 +139,7 @@ class ImportStudentsDatabase extends Command
             }
         }
 
-        $this->info("Rombel dasar SMP Anak Saleh berhasil disiapkan!");
+        $this->info("Rombel dasar SMP Anak Saleh berhasil diverifikasi & disiapkan!");
 
         // 4. Helper Normalisasi
         $formatTitleCase = function (?string $string): ?string {
@@ -166,7 +168,7 @@ class ImportStudentsDatabase extends Command
                 'm.si.' => 'M.Si.', 'm.si' => 'M.Si.', 'm.m.' => 'M.M.', 'm.m' => 'M.M.',
                 'm.ag.' => 'M.Ag.', 'm.ag' => 'M.Ag.', 'm.hum.' => 'M.Hum.', 'm.hum' => 'M.Hum.',
                 'm.kom.' => 'M.Kom.', 'm.kom' => 'M.Kom.', 'm.psi.' => 'M.Psi.', 'm.psi' => 'M.Psi.',
-                'gr.' => 'Gr.', 'gr' => 'Gr.',
+                'gr.' => 'Gr.', 'gr' => 'Gr.', 'ns.' => 'Ns.', 'ns' => 'Ns.',
                 'sd' => 'SD', 'smp' => 'SMP', 'sma' => 'SMA', 'smk' => 'SMK',
                 'tk' => 'TK', 'ra' => 'RA', 'ba' => 'BA', 'mi' => 'MI', 'mts' => 'MTs', 'ma' => 'MA',
                 'wni' => 'WNI', 'wna' => 'WNA', 'pdbk' => 'PDBK', 'adhd' => 'ADHD',
@@ -184,6 +186,35 @@ class ImportStudentsDatabase extends Command
             }
 
             return implode(' ', $result);
+        };
+
+        $splitTitles = function (?string $rawFullName) use ($formatTitleCase) {
+            if (empty($rawFullName)) return ['prefix' => null, 'name' => null, 'suffix' => null];
+            $trimmed = trim(preg_replace('/\s+/', ' ', $rawFullName));
+
+            // Known prefixes
+            $prefixPattern = '/^(dr\.|drh\.|dr|drh|ir\.|ir|prof\.|prof|h\.|hj\.|ns\.|ns|ust\.|ustadz)\s+/i';
+            $prefix = null;
+            if (preg_match($prefixPattern, $trimmed, $m)) {
+                $prefix = $formatTitleCase($m[1]);
+                $trimmed = trim(substr($trimmed, strlen($m[0])));
+            }
+
+            // Suffix: after comma
+            $suffix = null;
+            if (str_contains($trimmed, ',')) {
+                $parts = explode(',', $trimmed, 2);
+                $nameOnly = $formatTitleCase($parts[0]);
+                $suffix = trim($parts[1]);
+            } else {
+                $nameOnly = $formatTitleCase($trimmed);
+            }
+
+            return [
+                'prefix' => $prefix,
+                'name' => $nameOnly,
+                'suffix' => $suffix,
+            ];
         };
 
         $normalizeReligion = function (?string $rel) use ($formatTitleCase): string {
@@ -242,7 +273,7 @@ class ImportStudentsDatabase extends Command
                 }
             }
 
-            // Handle Indonesian month names like "16 AGUSTUS 2013", "03 JULI 2026"
+            // Handle Indonesian month names
             $indoMonths = [
                 'JANUARI' => '01', 'FEBRUARI' => '02', 'MARET' => '03', 'APRIL' => '04',
                 'MEI' => '05', 'JUNI' => '06', 'JULI' => '07', 'AGUSTUS' => '08',
@@ -266,7 +297,88 @@ class ImportStudentsDatabase extends Command
             }
         };
 
-        // 5. Baca Sheet MASTER & Import Data Siswa
+        $normalizeKey = function (?string $str): string {
+            if (empty($str)) return '';
+            return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $str));
+        };
+
+        // 5. Pre-parse Sheet "GF" (Google Form Questionnaire)
+        $gfSheet = $spreadsheet->getSheetByName('GF');
+        $gfDataByNik = [];
+        $gfDataByName = [];
+
+        if ($gfSheet) {
+            $gfHighestRow = $gfSheet->getHighestRow();
+            $this->info("Membaca data kuesioner Google Form dari Sheet GF (Total baris: {$gfHighestRow})...");
+
+            for ($gr = 2; $gr <= $gfHighestRow; $gr++) {
+                $gfName = $cleanStr($gfSheet->getCell('C' . $gr)->getValue());
+                $gfNik = $cleanStr($gfSheet->getCell('E' . $gr)->getValue());
+                if (empty($gfName) && empty($gfNik)) continue;
+
+                $record = [
+                    'timestamp' => $cleanStr($gfSheet->getCell('A' . $gr)->getValue()),
+                    'email' => $cleanStr($gfSheet->getCell('B' . $gr)->getValue()),
+                    'full_name' => $formatTitleCase($gfName),
+                    'nickname' => $formatTitleCase($cleanStr($gfSheet->getCell('D' . $gr)->getValue())),
+                    'nik' => $gfNik,
+                    'no_kk' => $cleanStr($gfSheet->getCell('F' . $gr)->getValue()),
+                    'origin_category' => $cleanStr($gfSheet->getCell('CX' . $gr)->getValue()),
+                    'previous_school' => $formatTitleCase($cleanStr($gfSheet->getCell('CY' . $gr)->getValue())),
+                    'previous_school_address' => $cleanStr($gfSheet->getCell('CZ' . $gr)->getValue()),
+                    'sd_entry_age' => $cleanStr($gfSheet->getCell('DA' . $gr)->getValue()) ?: $cleanStr($gfSheet->getCell('DC' . $gr)->getValue()),
+                    'sd_duration' => $cleanStr($gfSheet->getCell('DB' . $gr)->getValue()),
+                    'special_services_history' => $cleanStr($gfSheet->getCell('DD' . $gr)->getValue()),
+                    'academic_achievements' => $cleanStr($gfSheet->getCell('DE' . $gr)->getValue()),
+                    'difficult_subjects' => $cleanStr($gfSheet->getCell('DF' . $gr)->getValue()),
+                    'favorite_subjects' => $cleanStr($gfSheet->getCell('DG' . $gr)->getValue()),
+                    'house_condition' => $cleanStr($gfSheet->getCell('DH' . $gr)->getValue()),
+                    'house_residents' => $cleanStr($gfSheet->getCell('DI' . $gr)->getValue()),
+                    'house_ownership' => $cleanStr($gfSheet->getCell('DJ' . $gr)->getValue()),
+                    'living_with' => $formatTitleCase($cleanStr($gfSheet->getCell('DK' . $gr)->getValue())),
+                    'peer_opportunity' => $cleanStr($gfSheet->getCell('DL' . $gr)->getValue()),
+                    'religious_climate' => $cleanStr($gfSheet->getCell('DM' . $gr)->getValue()),
+                    'neighborhood_env1' => $cleanStr($gfSheet->getCell('DN' . $gr)->getValue()),
+                    'neighborhood_env2' => $cleanStr($gfSheet->getCell('DO' . $gr)->getValue()),
+                    'play_habits' => $cleanStr($gfSheet->getCell('DP' . $gr)->getValue()),
+                    'play_locations' => $cleanStr($gfSheet->getCell('DQ' . $gr)->getValue()),
+                    'play_partners' => $cleanStr($gfSheet->getCell('DR' . $gr)->getValue()),
+                    'allergy_food' => $cleanStr($gfSheet->getCell('DS' . $gr)->getValue()),
+                    'allergy_beverage' => $cleanStr($gfSheet->getCell('DT' . $gr)->getValue()),
+                    'allergy_medicine' => $cleanStr($gfSheet->getCell('DU' . $gr)->getValue()),
+                    'allergy_ingredients' => $cleanStr($gfSheet->getCell('DV' . $gr)->getValue()),
+                    'rel_father' => $cleanStr($gfSheet->getCell('DW' . $gr)->getValue()),
+                    'rel_mother' => $cleanStr($gfSheet->getCell('DX' . $gr)->getValue()),
+                    'rel_siblings' => $cleanStr($gfSheet->getCell('DY' . $gr)->getValue()),
+                    'rel_peers' => $cleanStr($gfSheet->getCell('DZ' . $gr)->getValue()),
+                    'closest_bond' => $cleanStr($gfSheet->getCell('EA' . $gr)->getValue()),
+                    'home_obedience' => $cleanStr($gfSheet->getCell('EB' . $gr)->getValue()),
+                    'character_traits' => $cleanStr($gfSheet->getCell('EC' . $gr)->getValue()),
+                    'good_behaviors' => $cleanStr($gfSheet->getCell('ED' . $gr)->getValue()),
+                    'challenging_behaviors' => $cleanStr($gfSheet->getCell('EE' . $gr)->getValue()),
+                    'parent_aspiration' => $cleanStr($gfSheet->getCell('EF' . $gr)->getValue()),
+                    'graduate_competencies' => $cleanStr($gfSheet->getCell('EG' . $gr)->getValue()),
+                    'planned_school_after' => $cleanStr($gfSheet->getCell('EH' . $gr)->getValue()),
+                    'distance_to_school' => $cleanStr($gfSheet->getCell('EI' . $gr)->getValue()),
+                    'transportation' => $formatTitleCase($cleanStr($gfSheet->getCell('EJ' . $gr)->getValue())),
+                    'trusted_pickup' => $formatTitleCase($cleanStr($gfSheet->getCell('EK' . $gr)->getValue())),
+                    'parent_message' => $cleanStr($gfSheet->getCell('EL' . $gr)->getValue()),
+                    'emergency_contact' => $cleanStr($gfSheet->getCell('EM' . $gr)->getValue()),
+                    'parent_suggestion' => $cleanStr($gfSheet->getCell('EN' . $gr)->getValue()),
+                ];
+
+                if (!empty($gfNik)) {
+                    $gfDataByNik[$gfNik] = $record;
+                }
+                if (!empty($gfName)) {
+                    $normName = $normalizeKey($gfName);
+                    $gfDataByName[$normName] = $record;
+                }
+            }
+            $this->info("Berhasil membaca " . count($gfDataByName) . " data GF untuk pengayaan!");
+        }
+
+        // 6. Baca Sheet MASTER & Import Data Siswa
         $sheet = $spreadsheet->getSheetByName('MASTER') ?? $spreadsheet->getActiveSheet();
         $highestRow = $sheet->getHighestRow();
 
@@ -288,6 +400,7 @@ class ImportStudentsDatabase extends Command
             $fullName = $formatTitleCase($rawFullName);
             $rawNis = $cleanStr($sheet->getCell('F' . $r)->getValue());
             $nis = !empty($rawNis) ? $rawNis : 'SMP.' . str_pad($r, 4, '0', STR_PAD_LEFT);
+            $nik = $cleanStr($sheet->getCell('O' . $r)->getValue());
 
             $rawGrade = $cleanStr($sheet->getCell('L' . $r)->getValue()) ?? '7';
             $rawClassName = strtoupper($cleanStr($sheet->getCell('M' . $r)->getValue()) ?? 'SAMUDRA PASAI');
@@ -326,10 +439,128 @@ class ImportStudentsDatabase extends Command
             $isPdbk = str_contains($studentTypeRaw, 'PDBK') || str_contains($studentTypeRaw, 'MBK') || str_contains($studentTypeRaw, 'KHUSUS') || str_contains($studentTypeRaw, 'INKLUSI') || !empty($specialNeedsType);
             $studentType = $isPdbk ? 'PDBK' : 'REGULER';
 
+            // Extract father name and titles
+            $fatherRawWithTitle = $cleanStr($sheet->getCell('AU' . $r)->getValue());
+            $fatherRawPlain = $cleanStr($sheet->getCell('AE' . $r)->getValue());
+            $fatherParsed = $splitTitles($fatherRawWithTitle ?: $fatherRawPlain);
+            $fatherName = $fatherRawPlain ? $formatTitleCase($fatherRawPlain) : ($fatherParsed['name'] ?: null);
+            $fatherTitlePrefix = $fatherParsed['prefix'];
+            $fatherTitleSuffix = $fatherParsed['suffix'];
+
+            // Extract mother name and titles
+            $motherRawWithTitle = $cleanStr($sheet->getCell('BR' . $r)->getValue());
+            $motherRawPlain = $cleanStr($sheet->getCell('AF' . $r)->getValue());
+            $motherParsed = $splitTitles($motherRawWithTitle ?: $motherRawPlain);
+            $motherName = $motherRawPlain ? $formatTitleCase($motherRawPlain) : ($motherParsed['name'] ?: null);
+            $motherTitlePrefix = $motherParsed['prefix'];
+            $motherTitleSuffix = $motherParsed['suffix'];
+
+            // Extract guardian name and titles
+            $guardianRawWithTitle = $cleanStr($sheet->getCell('CN' . $r)->getValue());
+            $guardianParsed = $splitTitles($guardianRawWithTitle);
+            $guardianName = $guardianParsed['name'];
+            $guardianTitlePrefix = $guardianParsed['prefix'];
+            $guardianTitleSuffix = $guardianParsed['suffix'];
+
+            // Match GF Record
+            $gfRecord = null;
+            if (!empty($nik) && isset($gfDataByNik[$nik])) {
+                $gfRecord = $gfDataByNik[$nik];
+            } else {
+                $normName = $normalizeKey($fullName);
+                if (isset($gfDataByName[$normName])) {
+                    $gfRecord = $gfDataByName[$normName];
+                }
+            }
+
+            // Build hybrid JSON structures
+            $familyData = [
+                'environment' => [
+                    'house_condition' => $gfRecord['house_condition'] ?? null,
+                    'house_ownership' => $gfRecord['house_ownership'] ?? null,
+                    'house_residents' => $gfRecord['house_residents'] ?? null,
+                    'neighborhood_environment' => trim(($gfRecord['neighborhood_env1'] ?? '') . ' ' . ($gfRecord['neighborhood_env2'] ?? '')) ?: null,
+                ],
+                'relationships' => [
+                    'trusted_pickup' => $gfRecord['trusted_pickup'] ?? null,
+                    'closest_bond' => $gfRecord['closest_bond'] ?? null,
+                    'rel_father' => $gfRecord['rel_father'] ?? null,
+                    'rel_mother' => $gfRecord['rel_mother'] ?? null,
+                    'rel_siblings' => $gfRecord['rel_siblings'] ?? null,
+                    'rel_peers' => $gfRecord['rel_peers'] ?? null,
+                    'peer_opportunity' => $gfRecord['peer_opportunity'] ?? null,
+                ],
+                'religious_climate' => [
+                    'climate' => $gfRecord['religious_climate'] ?? null,
+                ],
+                'home_obedience' => $gfRecord['home_obedience'] ?? null,
+            ];
+
+            $allergiesList = array_filter([
+                $gfRecord['allergy_food'] ?? null ? 'Makanan: ' . $gfRecord['allergy_food'] : null,
+                $gfRecord['allergy_beverage'] ?? null ? 'Minuman: ' . $gfRecord['allergy_beverage'] : null,
+                $gfRecord['allergy_medicine'] ?? null ? 'Obat: ' . $gfRecord['allergy_medicine'] : null,
+                $gfRecord['allergy_ingredients'] ?? null ? 'Bahan: ' . $gfRecord['allergy_ingredients'] : null,
+            ]);
+
+            $healthHabits = [
+                'allergies' => [
+                    'food' => $gfRecord['allergy_food'] ?? null,
+                    'beverage' => $gfRecord['allergy_beverage'] ?? null,
+                    'medicine' => $gfRecord['allergy_medicine'] ?? null,
+                    'ingredients' => $gfRecord['allergy_ingredients'] ?? null,
+                    'summary' => !empty($allergiesList) ? implode('; ', $allergiesList) : 'Tidak ada riwayat alergi',
+                ],
+                'play_habits' => [
+                    'habits' => $gfRecord['play_habits'] ?? null,
+                    'locations' => $gfRecord['play_locations'] ?? null,
+                    'partners' => $gfRecord['play_partners'] ?? null,
+                ],
+                'emergency_contact_instructions' => $gfRecord['emergency_contact'] ?? null,
+            ];
+
+            $developmentPsychology = [
+                'sd_background' => [
+                    'entry_age' => $gfRecord['sd_entry_age'] ?? null,
+                    'duration_years' => $gfRecord['sd_duration'] ?? null,
+                    'special_services_history' => $gfRecord['special_services_history'] ?? null,
+                    'academic_achievements' => $gfRecord['academic_achievements'] ?? null,
+                    'difficult_subjects' => $gfRecord['difficult_subjects'] ?? null,
+                    'favorite_subjects' => $gfRecord['favorite_subjects'] ?? null,
+                ],
+                'behavior_personality' => [
+                    'character_traits' => $gfRecord['character_traits'] ?? null,
+                    'good_behaviors' => $gfRecord['good_behaviors'] ?? null,
+                    'challenging_behaviors' => $gfRecord['challenging_behaviors'] ?? null,
+                ],
+                'parent_expectations' => [
+                    'graduate_competencies' => $gfRecord['graduate_competencies'] ?? null,
+                ],
+            ];
+
+            // Resolve emergency contacts from GF
+            $emergencyContactRaw = $gfRecord['emergency_contact'] ?? null;
+            $emergencyPhone = null;
+            $emergencyName = null;
+            if (!empty($emergencyContactRaw)) {
+                if (preg_match('/(08\d{8,12}|\+?62\d{8,12})/', $emergencyContactRaw, $m)) {
+                    $emergencyPhone = $cleanPhone($m[1]);
+                }
+                $emergencyName = trim(preg_replace('/(08\d{8,12}|\+?62\d{8,12})/', '', $emergencyContactRaw), " :;,-\t\n\r");
+            }
+
+            $distanceToSchool = $gfRecord['distance_to_school'] ?? null;
+            $transportation = $gfRecord['transportation'] ?? null;
+            $livingWith = $gfRecord['living_with'] ?? null;
+            $parentAspiration = $gfRecord['parent_aspiration'] ?? null;
+            $plannedSchoolAfter = $gfRecord['planned_school_after'] ?? null;
+            $parentMessage = $gfRecord['parent_message'] ?? null;
+            $parentSuggestion = $gfRecord['parent_suggestion'] ?? null;
+
             $studentData = [
                 'nis' => $nis,
                 'nisn' => $cleanStr($sheet->getCell('G' . $r)->getValue()),
-                'nik' => $cleanStr($sheet->getCell('O' . $r)->getValue()),
+                'nik' => $nik,
                 'no_kk' => $cleanStr($sheet->getCell('J' . $r)->getValue()),
                 'birth_certificate_no' => $cleanStr($sheet->getCell('I' . $r)->getValue()),
                 'diploma_number' => $cleanStr($sheet->getCell('H' . $r)->getValue()),
@@ -358,7 +589,15 @@ class ImportStudentsDatabase extends Command
                 'city' => $formatTitleCase($cleanStr($sheet->getCell('AA' . $r)->getValue())),
                 'postal_code' => $cleanStr($sheet->getCell('AB' . $r)->getValue()),
                 'home_phone' => $cleanPhone($sheet->getCell('AC' . $r)->getValue()),
-                'parent_phone' => $cleanPhone($sheet->getCell('AD' . $r)->getValue()),
+                'parent_phone' => $cleanPhone($sheet->getCell('AD' . $r)->getValue()) ?: ($cleanPhone($sheet->getCell('BI' . $r)->getValue()) ?: $cleanPhone($sheet->getCell('CE' . $r)->getValue())),
+                'living_with' => $livingWith,
+                'transportation' => $transportation,
+                'distance_to_school' => $distanceToSchool,
+
+                // Kontak Darurat
+                'emergency_contact_name' => $emergencyName,
+                'emergency_contact_phone' => $emergencyPhone,
+                'emergency_contact_relation' => $emergencyName ? 'Orang Tua / Kontak Darurat' : null,
 
                 // Keluarga & Saudara
                 'child_number' => $cleanInt($sheet->getCell('AG' . $r)->getValue()),
@@ -376,7 +615,9 @@ class ImportStudentsDatabase extends Command
                 'hair_color' => $formatTitleCase($cleanStr($sheet->getCell('AT' . $r)->getValue())),
 
                 // Data Ayah
-                'father_name' => $formatTitleCase($cleanStr($sheet->getCell('AU' . $r)->getValue()) ?? $cleanStr($sheet->getCell('AE' . $r)->getValue())),
+                'father_name' => $fatherName,
+                'father_title_prefix' => $fatherTitlePrefix,
+                'father_title_suffix' => $fatherTitleSuffix,
                 'father_birth_place' => $formatTitleCase($cleanStr($sheet->getCell('AV' . $r)->getValue())),
                 'father_birth_date' => $parseDate($sheet->getCell('AW' . $r)->getValue()),
                 'father_nik' => $cleanStr($sheet->getCell('AX' . $r)->getValue()),
@@ -393,7 +634,9 @@ class ImportStudentsDatabase extends Command
                 'father_social_media' => $cleanStr($sheet->getCell('BQ' . $r)->getValue()),
 
                 // Data Ibu
-                'mother_name' => $formatTitleCase($cleanStr($sheet->getCell('BR' . $r)->getValue()) ?? $cleanStr($sheet->getCell('AF' . $r)->getValue())),
+                'mother_name' => $motherName,
+                'mother_title_prefix' => $motherTitlePrefix,
+                'mother_title_suffix' => $motherTitleSuffix,
                 'mother_birth_place' => $formatTitleCase($cleanStr($sheet->getCell('BS' . $r)->getValue())),
                 'mother_birth_date' => $parseDate($sheet->getCell('BT' . $r)->getValue()),
                 'mother_nik' => $cleanStr($sheet->getCell('BU' . $r)->getValue()),
@@ -410,7 +653,9 @@ class ImportStudentsDatabase extends Command
                 'mother_social_media' => $cleanStr($sheet->getCell('CM' . $r)->getValue()),
 
                 // Data Wali
-                'guardian_name' => $formatTitleCase($cleanStr($sheet->getCell('CN' . $r)->getValue())),
+                'guardian_name' => $guardianName,
+                'guardian_title_prefix' => $guardianTitlePrefix,
+                'guardian_title_suffix' => $guardianTitleSuffix,
                 'guardian_birth_place' => $formatTitleCase($cleanStr($sheet->getCell('CO' . $r)->getValue())),
                 'guardian_birth_date' => $parseDate($sheet->getCell('CP' . $r)->getValue()),
                 'guardian_nik' => $cleanStr($sheet->getCell('CQ' . $r)->getValue()),
@@ -426,10 +671,21 @@ class ImportStudentsDatabase extends Command
                 'guardian_email' => $cleanStr($sheet->getCell('DG' . $r)->getValue()),
                 'guardian_social_media' => $cleanStr($sheet->getCell('DH' . $r)->getValue()),
 
+                // Cita-cita & Harapan Orang Tua
+                'parent_aspiration' => $parentAspiration,
+                'planned_school_after' => $plannedSchoolAfter,
+                'parent_message' => $parentMessage,
+                'parent_suggestion' => $parentSuggestion,
+
+                // Hybrid JSON
+                'family_data' => $familyData,
+                'health_habits' => $healthHabits,
+                'development_psychology' => $developmentPsychology,
+
                 // Asal Sekolah & Status Masuk
-                'origin_category' => $cleanStr($sheet->getCell('C' . $r)->getValue()),
-                'previous_school' => $formatTitleCase($cleanStr($sheet->getCell('D' . $r)->getValue())),
-                'previous_school_address' => $cleanStr($sheet->getCell('E' . $r)->getValue()),
+                'origin_category' => $cleanStr($sheet->getCell('C' . $r)->getValue()) ?: ($gfRecord['origin_category'] ?? null),
+                'previous_school' => $formatTitleCase($cleanStr($sheet->getCell('D' . $r)->getValue()) ?: ($gfRecord['previous_school'] ?? null)),
+                'previous_school_address' => $cleanStr($sheet->getCell('E' . $r)->getValue()) ?: ($gfRecord['previous_school_address'] ?? null),
                 'enrollment_date' => $parseDate($sheet->getCell('B' . $r)->getValue()) ?? now()->toDateString(),
                 'enrollment_type' => 'import',
                 'status' => 'aktif',
@@ -460,7 +716,7 @@ class ImportStudentsDatabase extends Command
                         'homeroom_teacher_name' => $student->classroom && $student->classroom->homeroomTeacher ? $student->classroom->homeroomTeacher->name : null,
                         'status' => 'aktif',
                         'start_date' => $student->enrollment_date ?? now()->toDateString(),
-                        'notes' => 'Import Master Database Siswa SMP',
+                        'notes' => 'Import Master Database Siswa SMP 2026/2027',
                     ]
                 );
             }
@@ -471,14 +727,14 @@ class ImportStudentsDatabase extends Command
         $bar->finish();
         $this->newLine(2);
 
-        $this->info("=========================================");
-        $this->info(" IMPORT DATABASE SISWA SMP SELESAI");
-        $this->info("=========================================");
+        $this->info("==================================================================");
+        $this->info(" IMPORT MASTER DATABASE & ENRICHMENT GOOGLE FORM SMP SELESAI");
+        $this->info("==================================================================");
         $this->table(
             ['Kategori', 'Jumlah'],
             [
                 ['Siswa Baru Diimpor', $imported],
-                ['Siswa Diperbarui', $updated],
+                ['Siswa Diperbarui (Enriched)', $updated],
                 ['Total Siswa Terproses', $imported + $updated],
                 ['Tahun Ajaran', $academicYear->name],
             ]

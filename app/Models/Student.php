@@ -127,6 +127,39 @@ class Student extends Model
         'previous_school_address',
         'sttb_number_date',
 
+        // Gelar & Status Wali
+        'father_title_prefix',
+        'father_title_suffix',
+        'mother_title_prefix',
+        'mother_title_suffix',
+        'guardian_title_prefix',
+        'guardian_title_suffix',
+        'is_accompanied_by_guardian',
+
+        // Domisili & Transportasi Tambahan
+        'dusun',
+        'living_with',
+        'transportation',
+        'travel_time_minutes',
+
+        // Kontak Darurat
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'emergency_contact_relation',
+
+        // Cita-cita, Hobi, Harapan & Pesan Ortu
+        'student_hobby',
+        'student_aspiration',
+        'parent_aspiration',
+        'planned_school_after',
+        'parent_message',
+        'parent_suggestion',
+
+        // Hybrid JSON Fields
+        'family_data',
+        'health_habits',
+        'development_psychology',
+
         // Dokumen & Status
         'documents',
         'checklist_documents',
@@ -145,8 +178,14 @@ class Student extends Model
         'mother_birth_date' => 'date',
         'guardian_birth_date' => 'date',
         'enrolled_date' => 'date',
+        'enrollment_date' => 'date',
         'documents' => 'array',
         'checklist_documents' => 'array',
+        'family_data' => 'array',
+        'health_habits' => 'array',
+        'development_psychology' => 'array',
+        'is_accompanied_by_guardian' => 'boolean',
+        'travel_time_minutes' => 'integer',
         'child_number' => 'integer',
         'siblings_count' => 'integer',
         'step_siblings_count' => 'integer',
