@@ -12,7 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement('SET SESSION innodb_strict_mode = 0');
+        try {
+            DB::statement('SET SESSION innodb_strict_mode = 0');
+        } catch (\Throwable $e) {
+            // Ignored if user lacks SESSION_VARIABLES_ADMIN privilege on production
+        }
 
         Schema::table('students', function (Blueprint $table) {
             $table->string('transportation', 255)->nullable()->change();
@@ -29,7 +33,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement('SET SESSION innodb_strict_mode = 0');
+        try {
+            DB::statement('SET SESSION innodb_strict_mode = 0');
+        } catch (\Throwable $e) {
+            // Ignored if user lacks SESSION_VARIABLES_ADMIN privilege on production
+        }
 
         Schema::table('students', function (Blueprint $table) {
             $table->string('transportation', 50)->nullable()->change();

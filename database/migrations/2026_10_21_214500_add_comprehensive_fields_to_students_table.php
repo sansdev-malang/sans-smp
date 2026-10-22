@@ -12,7 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement('SET SESSION innodb_strict_mode = 0');
+        try {
+            DB::statement('SET SESSION innodb_strict_mode = 0');
+        } catch (\Throwable $e) {
+            // Ignored if user lacks SESSION_VARIABLES_ADMIN privilege on production
+        }
 
         Schema::table('students', function (Blueprint $table) {
             // 1. Make NIS nullable and length 50
@@ -106,7 +110,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement('SET SESSION innodb_strict_mode = 0');
+        try {
+            DB::statement('SET SESSION innodb_strict_mode = 0');
+        } catch (\Throwable $e) {
+            // Ignored if user lacks SESSION_VARIABLES_ADMIN privilege on production
+        }
 
         Schema::table('students', function (Blueprint $table) {
             $cols = [
