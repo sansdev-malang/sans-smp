@@ -22,13 +22,25 @@ Route::get('/', function () {
 
 Route::view('/offline', 'errors.offline')->name('offline');
 
+// Public Guest Book Kiosk Form
+Route::get('/buku-tamu', [\App\Http\Controllers\GuestBookController::class, 'publicForm'])->name('buku-tamu.public');
+Route::post('/buku-tamu', [\App\Http\Controllers\GuestBookController::class, 'publicSubmit'])->name('buku-tamu.submit');
+
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 // Academic Master & Student Management (English Resource Standard)
 Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,admin_smp,kepala_sekolah,waka'])->group(function () {
     // Academic Years (Tahun Ajaran)
     Route::post('academic-years/{id}/set-active', [AcademicYearController::class, 'setActive'])->name('academic-years.set-active');
+    Route::match(['post', 'put', 'patch'], 'academic-years/{id}', [AcademicYearController::class, 'update'])->name('academic-years.update-custom');
+    Route::match(['post', 'delete'], 'academic-years/{id}/delete', [AcademicYearController::class, 'destroy'])->name('academic-years.destroy-custom');
     Route::resource('academic-years', AcademicYearController::class);
+
+    // Semesters (Semester)
+    Route::post('semesters/{id}/set-active', [\App\Http\Controllers\SemesterController::class, 'setActive'])->name('semesters.set-active');
+    Route::match(['post', 'put', 'patch'], 'semesters/{id}', [\App\Http\Controllers\SemesterController::class, 'update'])->name('semesters.update-custom');
+    Route::match(['post', 'delete'], 'semesters/{id}/delete', [\App\Http\Controllers\SemesterController::class, 'destroy'])->name('semesters.destroy-custom');
+    Route::resource('semesters', \App\Http\Controllers\SemesterController::class);
 
     // Class Levels (Tingkat Kelas)
     Route::resource('class-levels', ClassLevelController::class);
@@ -44,6 +56,9 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
     Route::get('students/export/excel', [StudentController::class, 'exportExcel'])->name('students.export.excel');
     Route::get('students/export/pdf', [StudentController::class, 'exportPdf'])->name('students.export.pdf');
     Route::get('students/print', [StudentController::class, 'print'])->name('students.print');
+    Route::get('students/{id}/export-dossier-pdf', [StudentController::class, 'dossierPdf'])->name('students.dossier.pdf');
+    Route::get('students/{id}/export-dossier-excel', [StudentController::class, 'dossierExcel'])->name('students.dossier.excel');
+    Route::get('students/{id}/print-dossier', [StudentController::class, 'dossierPrint'])->name('students.dossier.print');
     Route::resource('students', StudentController::class);
     Route::get('/siswa', fn() => redirect()->route('students.index'))->name('siswa');
 
@@ -63,6 +78,51 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
     Route::get('alumni/{id}', [\App\Http\Controllers\AlumniController::class, 'show'])->name('alumni.show');
     Route::get('alumni/{id}/print', [\App\Http\Controllers\AlumniController::class, 'print'])->name('alumni.print');
     Route::put('alumni/{id}', [\App\Http\Controllers\AlumniController::class, 'update'])->name('alumni.update');
+
+    // Penugasan Pendidik & Wali Kelas (Homeroom & Staff Assignments)
+    Route::post('homeroom-assignments/{id}/toggle-status', [\App\Http\Controllers\HomeroomAssignmentController::class, 'toggleStatus'])->name('homeroom-assignments.toggle-status');
+    Route::match(['post', 'put', 'patch'], 'homeroom-assignments/{id}', [\App\Http\Controllers\HomeroomAssignmentController::class, 'update'])->name('homeroom-assignments.update-custom');
+    Route::match(['post', 'delete'], 'homeroom-assignments/{id}/delete', [\App\Http\Controllers\HomeroomAssignmentController::class, 'destroy'])->name('homeroom-assignments.destroy-custom');
+    Route::resource('homeroom-assignments', \App\Http\Controllers\HomeroomAssignmentController::class);
+    Route::get('/wali-kelas', fn() => redirect()->route('homeroom-assignments.index'))->name('wali-kelas');
+
+    // Presensi Siswa (Student Attendance)
+    Route::get('student-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'index'])->name('student-attendances.index');
+    Route::post('student-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'store'])->name('student-attendances.store');
+    Route::get('student-attendances/export/excel', [\App\Http\Controllers\StudentAttendanceController::class, 'exportMonthlyExcel'])->name('student-attendances.export.excel');
+    Route::get('student-attendances/print', [\App\Http\Controllers\StudentAttendanceController::class, 'printMonthly'])->name('student-attendances.print');
+    Route::get('/absensi-murid', fn() => redirect()->route('student-attendances.index'))->name('absensi-murid');
+    Route::get('/presensi-siswa', fn() => redirect()->route('student-attendances.index'))->name('presensi-siswa');
+
+    // Arsip Dokumen Siswa (Student Archives)
+    Route::get('student-archives', [\App\Http\Controllers\StudentArchiveController::class, 'index'])->name('student-archives.index');
+    Route::post('student-archives', [\App\Http\Controllers\StudentArchiveController::class, 'store'])->name('student-archives.store');
+    Route::delete('student-archives/{id}', [\App\Http\Controllers\StudentArchiveController::class, 'destroy'])->name('student-archives.destroy');
+    Route::get('student-archives/{id}/download', [\App\Http\Controllers\StudentArchiveController::class, 'download'])->name('student-archives.download');
+    Route::get('student-archives/export/excel', [\App\Http\Controllers\StudentArchiveController::class, 'exportExcel'])->name('student-archives.export.excel');
+    Route::get('student-archives/print', [\App\Http\Controllers\StudentArchiveController::class, 'print'])->name('student-archives.print');
+    Route::get('/arsip-siswa', fn() => redirect()->route('student-archives.index'))->name('arsip-siswa');
+    Route::get('/arsip-murid', fn() => redirect()->route('student-archives.index'))->name('arsip-murid');
+
+    // Berkas Dokumen Guru & Pendidik (Teacher Documents)
+    Route::get('teacher-documents', [\App\Http\Controllers\TeacherDocumentController::class, 'index'])->name('teacher-documents.index');
+    Route::post('teacher-documents', [\App\Http\Controllers\TeacherDocumentController::class, 'store'])->name('teacher-documents.store');
+    Route::put('teacher-documents/{id}', [\App\Http\Controllers\TeacherDocumentController::class, 'update'])->name('teacher-documents.update');
+    Route::patch('teacher-documents/{id}/status', [\App\Http\Controllers\TeacherDocumentController::class, 'updateStatus'])->name('teacher-documents.update-status');
+    Route::delete('teacher-documents/{id}', [\App\Http\Controllers\TeacherDocumentController::class, 'destroy'])->name('teacher-documents.destroy');
+    Route::get('teacher-documents/{id}/download', [\App\Http\Controllers\TeacherDocumentController::class, 'download'])->name('teacher-documents.download');
+    Route::get('teacher-documents/export/excel', [\App\Http\Controllers\TeacherDocumentController::class, 'exportMatrixExcel'])->name('teacher-documents.export.excel');
+    Route::get('teacher-documents/print', [\App\Http\Controllers\TeacherDocumentController::class, 'printMatrix'])->name('teacher-documents.print');
+    Route::get('/berkas-guru', fn() => redirect()->route('teacher-documents.index'))->name('berkas-guru');
+
+    // Buku Tamu Admin (Guest Books)
+    Route::get('guest-books', [\App\Http\Controllers\GuestBookController::class, 'index'])->name('guest-books.index');
+    Route::post('guest-books', [\App\Http\Controllers\GuestBookController::class, 'store'])->name('guest-books.store');
+    Route::put('guest-books/{id}', [\App\Http\Controllers\GuestBookController::class, 'update'])->name('guest-books.update');
+    Route::delete('guest-books/{id}', [\App\Http\Controllers\GuestBookController::class, 'destroy'])->name('guest-books.destroy');
+    Route::get('guest-books/export/excel', [\App\Http\Controllers\GuestBookController::class, 'exportExcel'])->name('guest-books.export.excel');
+    Route::get('guest-books/download-pdf', [\App\Http\Controllers\GuestBookController::class, 'downloadPdf'])->name('guest-books.download.pdf');
+    Route::get('guest-books/print', [\App\Http\Controllers\GuestBookController::class, 'print'])->name('guest-books.print');
 });
 
 Route::get('/guru', fn() => redirect()->route('teachers.index'))->name('guru');

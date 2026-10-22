@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\ClassLevel;
 use App\Models\Classroom;
+use App\Models\HomeroomAssignment;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -108,7 +109,7 @@ class StudentReportController extends Controller
         $yearName = $selectedYear ? $selectedYear->name : 'Semua Tahun';
 
         $sheet->setCellValue('A1', "Data Peserta Didik " . $unitName);
-        $sheet->setCellValue('A2', "Tapel {$yearName}");
+        $sheet->setCellValue('A2', "TA {$yearName}");
         $sheet->getStyle('A1:A2')->getFont()->setBold(true)->setSize(13);
 
         // Table Header
@@ -121,7 +122,7 @@ class StudentReportController extends Controller
             'F4' => 'Jml Siswa @ Kelas',
             'G4' => 'INKLUSI',
             'H4' => 'WALI KELAS',
-            'I4' => 'GURU KELAS',
+            'I4' => 'GURU MAPEL',
             'J4' => 'GPK',
             'K4' => 'GPQ',
         ];
@@ -302,7 +303,7 @@ class StudentReportController extends Controller
         $grandTotalPdbk = 0;
         $grandTotalClassrooms = 0;
 
-        $staffMatrix = $this->getStaffMatrixReport();
+        $staffMatrix = $this->getStaffMatrixReport($matchingYearIds);
 
         foreach ($classLevels as $level) {
             $classroomsData = [];
@@ -323,9 +324,8 @@ class StudentReportController extends Controller
 
                 $gpkTeachers = $cr->students->whereNotNull('gpkTeacher')->pluck('gpkTeacher.name')->unique()->values()->all();
 
-                // Matched staff data from Sheet Report TU
-                $staffCode = strtoupper(trim($cr->code ?: ''));
-                $matchedStaff = $levelStaffInfo['classes'][$staffCode] ?? null;
+                // Matched staff data from homeroom_assignments
+                $matchedStaff = $staffMatrix[$cr->id] ?? null;
 
                 $homeroomTeacher = $matchedStaff['homeroom'] ?? ($cr->homeroomTeacher?->name ?: '-');
                 $classTeacher = $matchedStaff['class_teacher'] ?? '-';
@@ -414,10 +414,51 @@ class StudentReportController extends Controller
     }
 
     /**
-     * Teacher and staff assignments matrix for SMP (empty until configured).
+     * Teacher and staff assignments matrix for SMP queried dynamically from HomeroomAssignment.
      */
-    private function getStaffMatrixReport(): array
+    private function getStaffMatrixReport(array $matchingYearIds = []): array
     {
-        return [];
+        $query = HomeroomAssignment::with('employee')
+            ->where('is_active', true);
+
+        if (!empty($matchingYearIds)) {
+            $query->whereIn('academic_year_id', $matchingYearIds);
+        }
+
+        $assignments = $query->get();
+
+        $matrix = [];
+        foreach ($assignments as $as) {
+            $crId = $as->classroom_id;
+            if (!isset($matrix[$crId])) {
+                $matrix[$crId] = [
+                    'homeroom' => null,
+                    'guru_mapel' => [],
+                    'gpk' => [],
+                    'gpq' => [],
+                ];
+            }
+
+            $empName = $as->employee?->name;
+            if (!$empName) continue;
+
+            if ($as->role === 'wali_kelas') {
+                $matrix[$crId]['homeroom'] = $empName;
+            } elseif ($as->role === 'guru_mapel') {
+                $lbl = $as->subject ? "{$empName} ({$as->subject})" : $empName;
+                $matrix[$crId]['guru_mapel'][] = $lbl;
+            } elseif ($as->role === 'gpk') {
+                $matrix[$crId]['gpk'][] = $empName;
+            } elseif ($as->role === 'gpq') {
+                $matrix[$crId]['gpq'][] = $empName;
+            }
+        }
+
+        foreach ($matrix as $crId => $data) {
+            $matrix[$crId]['class_teacher'] = !empty($data['guru_mapel']) ? implode(', ', $data['guru_mapel']) : '-';
+            $matrix[$crId]['gpq'] = !empty($data['gpq']) ? implode(', ', $data['gpq']) : '-';
+        }
+
+        return $matrix;
     }
 }

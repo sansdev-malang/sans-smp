@@ -262,18 +262,22 @@ class StudentController extends Controller
      */
     public function exportExcel(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $filterData = $this->getFilteredStudentsQuery($request);
         $students = $filterData['query']->orderBy('classroom_id', 'asc')->orderBy('full_name', 'asc')->get();
-        $selectedYearName = $filterData['selectedYearName'] ?: 'Semua Tapel';
+        $selectedYearName = $filterData['selectedYearName'] ?: 'Semua Tahun Ajaran';
         $unitName = function_exists('setting') ? setting('unit_name', 'SMP Anak Saleh') : 'SMP Anak Saleh';
 
         $spreadsheet = new Spreadsheet();
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Arial')->setSize(9);
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Siswa');
 
         // Document Titles
         $sheet->setCellValue('A1', "DATA PESERTA DIDIK " . strtoupper($unitName));
-        $sheet->setCellValue('A2', "Tahun Pelajaran: " . $selectedYearName . " | Total: " . count($students) . " Siswa | Dicetak: " . date('d/m/Y H:i') . " WIB");
+        $sheet->setCellValue('A2', "Tahun Ajaran: " . $selectedYearName . " | Total: " . count($students) . " Siswa | Dicetak: " . date('d/m/Y H:i') . " WIB");
         
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('1E1B4B');
         $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(10)->getColor()->setRGB('475569');
@@ -302,7 +306,7 @@ class StudentController extends Controller
             'Jumlah Saudara Angkat',
             'Tingkat / Grade',
             'Rombel',
-            'Tahun Pelajaran',
+            'Tahun Ajaran',
             'Kategori Siswa',
             'Jenis Kebutuhan Khusus',
             'Guru Pendamping Khusus (GPK)',
@@ -404,17 +408,21 @@ class StudentController extends Controller
         $headerRow = 4;
         foreach ($headers as $colIdx => $title) {
             $colLetter = Coordinate::stringFromColumnIndex($colIdx + 1);
-            $sheet->setCellValue($colLetter . $headerRow, $title);
+            $sheet->setCellValueExplicit($colLetter . $headerRow, $title, DataType::TYPE_STRING);
         }
 
         $lastColLetter = Coordinate::stringFromColumnIndex(count($headers));
+        
+        // Merge Document Titles so Column A is not stretched by long title strings
+        $sheet->mergeCells("A1:{$lastColLetter}1");
+        $sheet->mergeCells("A2:{$lastColLetter}2");
         
         // Header Styling
         $sheet->getStyle("A{$headerRow}:{$lastColLetter}{$headerRow}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
-                'size' => 10,
+                'size' => 9.5,
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
@@ -440,6 +448,14 @@ class StudentController extends Controller
         $countFemale = 0;
         $countPdbk = 0;
 
+        $cleanCell = function ($val) {
+            $str = (string) ($val ?? '-');
+            if (str_starts_with($str, '=') || str_starts_with($str, '+') || str_starts_with($str, '@')) {
+                return "'" . $str;
+            }
+            return $str;
+        };
+
         foreach ($students as $student) {
             $isFemale = in_array(strtoupper((string)$student->gender), ['P', 'PEREMPUAN', 'FEMALE']);
             $genderCode = $isFemale ? 'P' : 'L';
@@ -463,128 +479,139 @@ class StudentController extends Controller
             }
 
             $c = 1;
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $no++);
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->nis ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->nisn ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->nik ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->no_kk ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->birth_certificate_no ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, strtoupper($student->full_name ?? '-'));
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->nickname ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $genderCode);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->birth_place ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $birthDateFormatted);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->age ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->religion ?? 'Islam');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->citizenship ?? 'WNI');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->ethnic_group ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->home_language ?? 'Bahasa Indonesia');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->child_number ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->siblings_count ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->step_siblings_count ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->adoptive_siblings_count ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->classroom?->classLevel?->name ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->classroom?->full_name ?? ($student->classroom?->name ?? '-'));
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->academicYear?->name ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $kategoriText);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->special_needs_type ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->gpkTeacher?->name ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->classroom?->homeroomTeacher?->name ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->address ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->dusun ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->rt ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->rw ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->village ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->district ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->city ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->province ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->postal_code ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->residence_status ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->living_with ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->distance_to_school ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->transportation ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->home_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->parent_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->parent_email ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->emergency_contact_name ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->emergency_contact_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->emergency_contact_relation ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->weight ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->height ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->blood_type ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->skin_color ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->hair_type ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->hair_color ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $allergiesSummary);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->severe_disease_history ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->frequent_disease ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_title_prefix ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_name ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_title_suffix ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->father_nik ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_birth_place ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $fatherBirthDateFormatted);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_religion ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->father_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_education ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_job ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_company ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_company_address ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->father_company_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_income ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_email ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_address ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->father_social_media ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_title_prefix ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_name ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_title_suffix ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->mother_nik ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_birth_place ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $motherBirthDateFormatted);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_religion ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->mother_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_education ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_job ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_company ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_company_address ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->mother_company_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_income ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_email ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_address ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->mother_social_media ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_title_prefix ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_name ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_title_suffix ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->guardian_nik ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_relation ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_birth_place ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $guardianBirthDateFormatted);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_religion ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->guardian_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_education ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_job ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_company ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_company_address ?? '-');
-            $sheet->setCellValueExplicit(Coordinate::stringFromColumnIndex($c++) . $row, (string)($student->guardian_company_phone ?? '-'), DataType::TYPE_STRING);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_income ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_email ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_address ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->guardian_social_media ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->origin_category ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->previous_school ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->previous_school_address ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->sttb_number_date ?? ($student->diploma_number ?? '-'));
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->student_hobby ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->student_aspiration ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->parent_aspiration ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->planned_school_after ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->parent_message ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $student->parent_suggestion ?? '-');
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $statusText);
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($c++) . $row, $enrolledDateFormatted);
+            $write = function ($val) use ($sheet, &$c, $row, $cleanCell) {
+                $colLetter = Coordinate::stringFromColumnIndex($c++);
+                $sheet->setCellValueExplicit($colLetter . $row, $cleanCell($val), DataType::TYPE_STRING);
+            };
 
-            // Row Border & Zebra Striping
-            $sheet->getStyle("A{$row}:{$lastColLetter}{$row}")->applyFromArray([
+            $write($no++);
+            $write($student->nis);
+            $write($student->nisn);
+            $write($student->nik);
+            $write($student->no_kk);
+            $write($student->birth_certificate_no ?: $student->no_akta);
+            $write(strtoupper($student->full_name ?? '-'));
+            $write($student->nickname);
+            $write($genderCode);
+            $write($student->birth_place);
+            $write($birthDateFormatted);
+            $write($student->age);
+            $write($student->religion ?: 'Islam');
+            $write($student->citizenship ?: 'WNI');
+            $write($student->ethnic_group ?: $student->ethnicity);
+            $write($student->home_language ?: 'Bahasa Indonesia');
+            $write($student->child_number ?: $student->child_order);
+            $write($student->siblings_count);
+            $write($student->step_siblings_count);
+            $write($student->adoptive_siblings_count);
+            $write($student->classroom?->classLevel?->name);
+            $write($student->classroom?->full_name ?? ($student->classroom?->name ?? '-'));
+            $write($student->academicYear?->name);
+            $write($kategoriText);
+            $write($student->special_needs_type);
+            $write($student->gpkTeacher?->name);
+            $write($student->classroom?->homeroomTeacher?->name);
+            $write($student->address);
+            $write($student->dusun);
+            $write($student->rt);
+            $write($student->rw);
+            $write($student->village ?: $student->kelurahan);
+            $write($student->district ?: $student->kecamatan);
+            $write($student->city);
+            $write($student->province);
+            $write($student->postal_code);
+            $write($student->residence_status ?: $student->housing_status);
+            $write($student->living_with);
+            $write($student->distance_to_school);
+            $write($student->transportation);
+            $write($student->home_phone);
+            $write($student->parent_phone);
+            $write($student->parent_email);
+            $write($student->emergency_contact_name);
+            $write($student->emergency_contact_phone);
+            $write($student->emergency_contact_relation);
+            $write($student->weight);
+            $write($student->height);
+            $write($student->blood_type);
+            $write($student->skin_color);
+            $write($student->hair_type);
+            $write($student->hair_color);
+            $write($allergiesSummary);
+            $write($student->severe_disease_history);
+            $write($student->frequent_disease);
+            $write($student->father_title_prefix ?: $student->father_title_front);
+            $write($student->father_name);
+            $write($student->father_title_suffix ?: $student->father_title_back);
+            $write($student->father_nik);
+            $write($student->father_birth_place);
+            $write($fatherBirthDateFormatted);
+            $write($student->father_religion);
+            $write($student->father_phone);
+            $write($student->father_education);
+            $write($student->father_job);
+            $write($student->father_company);
+            $write($student->father_company_address);
+            $write($student->father_company_phone);
+            $write($student->father_income);
+            $write($student->father_email);
+            $write($student->father_address);
+            $write($student->father_social_media);
+            $write($student->mother_title_prefix ?: $student->mother_title_front);
+            $write($student->mother_name);
+            $write($student->mother_title_suffix ?: $student->mother_title_back);
+            $write($student->mother_nik);
+            $write($student->mother_birth_place);
+            $write($motherBirthDateFormatted);
+            $write($student->mother_religion);
+            $write($student->mother_phone);
+            $write($student->mother_education);
+            $write($student->mother_job);
+            $write($student->mother_company);
+            $write($student->mother_company_address);
+            $write($student->mother_company_phone);
+            $write($student->mother_income);
+            $write($student->mother_email);
+            $write($student->mother_address);
+            $write($student->mother_social_media);
+            $write($student->guardian_title_prefix);
+            $write($student->guardian_name);
+            $write($student->guardian_title_suffix);
+            $write($student->guardian_nik);
+            $write($student->guardian_relation);
+            $write($student->guardian_birth_place);
+            $write($guardianBirthDateFormatted);
+            $write($student->guardian_religion);
+            $write($student->guardian_phone);
+            $write($student->guardian_education);
+            $write($student->guardian_job);
+            $write($student->guardian_company);
+            $write($student->guardian_company_address);
+            $write($student->guardian_company_phone);
+            $write($student->guardian_income);
+            $write($student->guardian_email);
+            $write($student->guardian_address);
+            $write($student->guardian_social_media);
+            $write($student->origin_category);
+            $write($student->previous_school);
+            $write($student->previous_school_address);
+            $write($student->sttb_number_date ?: $student->diploma_number);
+            $write($student->student_hobby);
+            $write($student->student_aspiration);
+            $write($student->parent_aspiration);
+            $write($student->planned_school_after);
+            $write($student->parent_message);
+            $write($student->parent_suggestion);
+            $write($statusText);
+            $write($enrolledDateFormatted);
+
+            $row++;
+        }
+
+        $lastDataRow = $row - 1;
+
+        if ($lastDataRow >= 5) {
+            // Apply single range border & alignment (super fast, no memory leak)
+            $sheet->getStyle("A5:{$lastColLetter}{$lastDataRow}")->applyFromArray([
                 'borders' => [
                     'allBorders' => [
                         'borderStyle' => Border::BORDER_THIN,
@@ -596,24 +623,16 @@ class StudentController extends Controller
                 ],
             ]);
 
-            if ($row % 2 === 0) {
-                $sheet->getStyle("A{$row}:{$lastColLetter}{$row}")->getFill()
-                    ->setFillType(Fill::FILL_SOLID)
-                    ->getStartColor()->setRGB('F8FAFC');
-            }
-
-            // Alignments for specific columns
-            $sheet->getStyle("A{$row}:F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("K{$row}:M{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("Q{$row}:W{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-            $row++;
+            // Center alignment for specific columns
+            $sheet->getStyle("A5:F{$lastDataRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("I5:I{$lastDataRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("K5:M{$lastDataRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("Q{$lastDataRow}:W{$lastDataRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
 
         // Summary Statistics Footer Row
         $summaryRow = $row;
-        $sheet->setCellValue("A{$summaryRow}", "TOTAL PESERTA DIDIK TERDATA: " . count($students) . " Siswa (Putra: {$countMale}, Putri: {$countFemale}, PDBK/Inklusi: {$countPdbk})");
+        $sheet->setCellValueExplicit("A{$summaryRow}", "TOTAL PESERTA DIDIK TERDATA: " . count($students) . " Siswa (Putra: {$countMale}, Putri: {$countFemale}, PDBK/Inklusi: {$countPdbk})", DataType::TYPE_STRING);
         $sheet->mergeCells("A{$summaryRow}:{$lastColLetter}{$summaryRow}");
         $sheet->getStyle("A{$summaryRow}:{$lastColLetter}{$summaryRow}")->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 10],
@@ -623,26 +642,35 @@ class StudentController extends Controller
         ]);
         $sheet->getRowDimension($summaryRow)->setRowHeight(26);
 
-        // Auto-fit column widths
+        // Fast Column Widths
         foreach (range(1, count($headers)) as $colIdx) {
             $colLetter = Coordinate::stringFromColumnIndex($colIdx);
-            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+            $sheet->getColumnDimension($colLetter)->setWidth(18);
         }
+        $sheet->getColumnDimension('A')->setWidth(6);
+        $sheet->getColumnDimension('B')->setWidth(14);
+        $sheet->getColumnDimension('C')->setWidth(16);
+        $sheet->getColumnDimension('D')->setWidth(18);
+        $sheet->getColumnDimension('G')->setWidth(30);
 
         $cleanYear = str_replace(['/', ' '], '_', $selectedYearName);
         $fileName = 'Data_Siswa_' . str_replace([' ', '.'], '_', $unitName) . '_' . $cleanYear . '_' . date('Ymd_His') . '.xlsx';
 
+        $writer = new Xlsx($spreadsheet);
+        $writer->setPreCalculateFormulas(false); // CRITICAL: disables formula pre-calculation, preventing external workbook crashes
+
+        $response = response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+
         if ($request->filled('download_token')) {
-            setcookie('download_token', $request->query('download_token'), time() + 60, '/', '', false, false);
+            $response->headers->setCookie(cookie('download_token', $request->query('download_token'), 1, '/', null, false, false));
         }
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header("Content-Disposition: attachment; filename=\"{$fileName}\"");
-        header('Cache-Control: max-age=0');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
+        return $response;
     }
 
     /**

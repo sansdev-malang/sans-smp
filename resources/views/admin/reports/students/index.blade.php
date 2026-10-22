@@ -18,14 +18,14 @@
 
             <!-- ACTION CONTROLS & FILTER -->
             <div class="flex flex-wrap items-center gap-2 shrink-0">
-                <!-- Filter Tapel -->
+                <!-- Filter Tahun Ajaran -->
                 <form action="{{ route('student-reports.index') }}" method="GET" class="flex items-center">
                     <div class="relative">
                         <select name="academic_year_id" onchange="this.form.submit()"
                             class="h-8.5 pl-8 pr-8 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-xs cursor-pointer appearance-none transition-colors">
                             @foreach($academicYears as $ay)
                                 <option value="{{ $ay->id }}" {{ ($selectedYear && $selectedYear->name === $ay->name) || $selectedYearId == $ay->id ? 'selected' : '' }}>
-                                    Tapel {{ $ay->name }} {{ $ay->has_active ? '(Aktif)' : '' }}
+                                    TA {{ $ay->name }} {{ $ay->has_active ? '(Aktif)' : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -199,7 +199,7 @@
                         <span class="text-[11px] text-slate-400">Kelas Aktif</span>
                     </div>
                     <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                        <span>Status Tapel:</span>
+                        <span>Status TA:</span>
                         <span class="font-bold text-emerald-600 dark:text-emerald-400">3 Tingkat (7-9)</span>
                     </div>
                 </div>
@@ -510,7 +510,7 @@
                             Matriks Distribusi Pendidik & Tenaga Kependidikan per Rombel
                         </h3>
                         <p class="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">
-                            Menampilkan alokasi Wali Kelas, Guru Kelas, Guru Pendamping Khusus (GPK), Guru Al-Qur'an (GPQ), serta Koordinator Tingkat sesuai format resmi Sheet REPORT Tata Usaha.
+                            Menampilkan alokasi Wali Kelas, Guru Mapel, Guru Pendamping Khusus (GPK), Guru Al-Qur'an (GPQ), serta Koordinator Tingkat sesuai format resmi Sheet REPORT Tata Usaha.
                         </p>
                     </div>
                 </div>
@@ -532,7 +532,7 @@
                         </h2>
                     </div>
                     <span class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                        Tapel {{ $selectedYear ? $selectedYear->name : '-' }}
+                        TA {{ $selectedYear ? $selectedYear->name : '-' }}
                     </span>
                 </div>
 
@@ -548,7 +548,7 @@
                                 <th class="px-2.5 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider w-16 text-emerald-300">Jml Siswa</th>
                                 <th class="px-2.5 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider w-16 text-purple-300">Inklusi</th>
                                 <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider min-w-[170px] text-indigo-300">Wali Kelas</th>
-                                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider min-w-[160px] text-teal-300">Guru Kelas</th>
+                                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider min-w-[160px] text-teal-300">Guru Mapel</th>
                                 <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider min-w-[200px] text-amber-300">GPK (Inklusi)</th>
                                 <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider min-w-[160px] text-rose-300">GPQ (Al-Qur'an)</th>
                             </tr>

@@ -42,15 +42,20 @@ class AcademicYearController extends Controller
         $totalClassrooms = Classroom::where('is_active', true)->count();
         $totalStudents = Student::where('status', 'aktif')->count();
 
+        $semesters = \App\Models\Semester::orderBy('order', 'asc')->get();
+        $activeSemester = $semesters->firstWhere('is_active', true);
+        $totalSemesters = $semesters->count();
+
         $stats = [
             'total_years' => $totalYears,
             'active_year' => $activeYear?->name ?? 'Belum Diatur',
-            'active_semester' => $activeYear?->semester ?? '-',
+            'active_semester' => $activeSemester?->name ?? ($activeYear?->semester ?? '-'),
+            'total_semesters' => $totalSemesters,
             'total_classrooms' => $totalClassrooms,
             'total_students' => $totalStudents,
         ];
 
-        return view('admin.academic-years.index', compact('academicYears', 'activeYear', 'stats'));
+        return view('admin.academic-years.index', compact('academicYears', 'semesters', 'activeYear', 'activeSemester', 'stats'));
     }
 
     /**
@@ -71,7 +76,7 @@ class AcademicYearController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $semester = strtolower($request->input('semester', 'ganjil'));
+        $semester = strtolower($request->input('semester', 'ganjil') ?: 'ganjil');
 
         $validated = $request->validate([
             'name' => [
@@ -83,11 +88,11 @@ class AcademicYearController extends Controller
                 }),
             ],
             'code' => 'nullable|string|max:20',
-            'semester' => 'required|string|in:Ganjil,Genap,ganjil,genap',
+            'semester' => 'nullable|string',
             'is_active' => 'nullable|boolean',
             'description' => 'nullable|string',
         ], [
-            'name.unique' => "Tahun Pelajaran {$request->input('name')} untuk semester {$request->input('semester')} sudah ada.",
+            'name.unique' => "Tahun Ajaran {$request->input('name')} sudah ada.",
         ]);
 
         $validated['semester'] = $semester;
@@ -108,7 +113,7 @@ class AcademicYearController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Tahun Ajaran {$academicYear->name} ({$academicYear->semester}) berhasil ditambahkan.",
+            'message' => "Tahun Ajaran {$academicYear->name} berhasil ditambahkan.",
             'academic_year' => $academicYear,
         ]);
     }
@@ -119,7 +124,7 @@ class AcademicYearController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $academicYear = AcademicYear::findOrFail($id);
-        $semester = strtolower($request->input('semester', $academicYear->semester));
+        $semester = strtolower($request->input('semester', $academicYear->semester) ?: ($academicYear->semester ?: 'ganjil'));
 
         $validated = $request->validate([
             'name' => [
@@ -131,11 +136,11 @@ class AcademicYearController extends Controller
                 }),
             ],
             'code' => 'nullable|string|max:20',
-            'semester' => 'required|string|in:Ganjil,Genap,ganjil,genap',
+            'semester' => 'nullable|string',
             'is_active' => 'nullable|boolean',
             'description' => 'nullable|string',
         ], [
-            'name.unique' => "Tahun Pelajaran {$request->input('name')} untuk semester {$request->input('semester')} sudah ada.",
+            'name.unique' => "Tahun Ajaran {$request->input('name')} sudah ada.",
         ]);
 
         $validated['semester'] = $semester;
