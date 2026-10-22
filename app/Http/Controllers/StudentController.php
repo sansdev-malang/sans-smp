@@ -9,7 +9,9 @@ use App\Models\Employee;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -667,6 +669,7 @@ class StudentController extends Controller
         ]);
 
         if ($request->filled('download_token')) {
+            @setcookie('download_token', $request->query('download_token'), time() + 60, '/', '', false, false);
             $response->headers->setCookie(cookie('download_token', $request->query('download_token'), 1, '/', null, false, false));
         }
 
@@ -757,6 +760,12 @@ class StudentController extends Controller
     public function exportPdf(Request $request)
     {
         ini_set('memory_limit', '512M');
+        set_time_limit(180);
+
+        if ($request->filled('download_token')) {
+            @setcookie('download_token', $request->query('download_token'), time() + 60, '/', '', false, false);
+        }
+
         $filterData = $this->getFilteredStudentsQuery($request);
         $students = $filterData['query']->orderBy('classroom_id', 'asc')->orderBy('full_name', 'asc')->get();
         $selectedYearName = $filterData['selectedYearName'] ?: 'Semua_Tapel';
@@ -797,13 +806,351 @@ class StudentController extends Controller
             ->setPaper('a4', 'landscape')
             ->setOption('isRemoteEnabled', true);
 
-        return $pdf->download($fileName);
+        $response = $pdf->download($fileName);
+
+        if ($request->filled('download_token')) {
+            $response->headers->setCookie(cookie('download_token', $request->query('download_token'), 1, '/', null, false, false));
+        }
+
+        return $response;
     }
 
     /**
-     * Show single student detail (JSON) with full profile & lifecycle history.
+     * Resolve school profile, principal info, and logo base64.
      */
-    public function show($id): JsonResponse
+    private function getSchoolAndPrincipalInfo(): array
+    {
+        $schoolName = function_exists('setting') ? setting('unit_name', setting('app_name', 'SMP Anak Saleh Malang')) : 'SMP Anak Saleh Malang';
+        $schoolAddress = function_exists('setting') ? setting('app_address', 'Jl. Candi Panggung Indah No. 1-3, Mojolangu, Lowokwaru, Kota Malang, Jawa Timur') : 'Jl. Candi Panggung Indah No. 1-3, Mojolangu, Lowokwaru, Kota Malang, Jawa Timur';
+        $schoolPhone = function_exists('setting') ? setting('app_phone', setting('school_phone', '+62 812-3456-7890')) : '+62 812-3456-7890';
+        $schoolEmail = function_exists('setting') ? setting('app_email', 'admin@sans.dev') : 'admin@sans.dev';
+
+        $principalUser = User::where('role', 'kepala_sekolah')->first();
+        $principalEmp = null;
+        if ($principalUser && $principalUser->employee_id) {
+            $principalEmp = Employee::find($principalUser->employee_id);
+        }
+        if (!$principalEmp) {
+            $principalEmp = Employee::where(function ($q) {
+                $q->where('position', 'like', '%Kepala Sekolah%')
+                  ->orWhere('position', 'like', '%Kepsek%');
+            })->first();
+        }
+        $principalName = $principalEmp?->name ?? $principalUser?->name ?? (function_exists('setting') ? setting('school_principal_name', 'Kepala Sekolah SMP Anak Saleh') : 'Kepala Sekolah SMP Anak Saleh');
+        $principalNiy = $principalEmp?->niy ?? $principalEmp?->nip ?? (function_exists('setting') ? setting('school_principal_niy', '-') : '-');
+
+        // Logo image as base64 for DomPDF embed
+        $logoPath = function_exists('setting') ? setting('app_logo') : null;
+        $logoSrc = null;
+        if ($logoPath) {
+            $fullLogoPath = public_path('storage/' . $logoPath);
+            if (!file_exists($fullLogoPath)) {
+                $fullLogoPath = storage_path('app/public/' . $logoPath);
+            }
+            if (file_exists($fullLogoPath)) {
+                $type = pathinfo($fullLogoPath, PATHINFO_EXTENSION);
+                $data = @file_get_contents($fullLogoPath);
+                if ($data) {
+                    $logoSrc = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                }
+            }
+        }
+
+        return [
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress,
+            'schoolPhone' => $schoolPhone,
+            'schoolEmail' => $schoolEmail,
+            'principalName' => $principalName,
+            'principalNiy' => $principalNiy,
+            'logoSrc' => $logoSrc,
+        ];
+    }
+
+    /**
+     * Download official individual student dossier as PDF (A4 Portrait).
+     */
+    public function dossierPdf(Request $request, $id)
+    {
+        ini_set('memory_limit', '512M');
+        set_time_limit(180);
+
+        if ($request->filled('download_token')) {
+            @setcookie('download_token', $request->query('download_token'), time() + 60, '/', '', false, false);
+        }
+
+        $student = Student::with([
+            'academicYear',
+            'classroom.classLevel',
+            'classroom.homeroomTeacher',
+            'gpkTeacher',
+            'classroomHistories' => function ($q) {
+                $q->with('academicYear')->orderBy('id', 'asc');
+            }
+        ])->findOrFail($id);
+
+        $info = $this->getSchoolAndPrincipalInfo();
+        $schoolName = $info['schoolName'];
+        $schoolAddress = $info['schoolAddress'];
+        $schoolPhone = $info['schoolPhone'];
+        $schoolEmail = $info['schoolEmail'];
+        $principalName = $info['principalName'];
+        $principalNiy = $info['principalNiy'];
+        $logoSrc = $info['logoSrc'];
+
+        $fileName = 'Dossier-Siswa-' . \Illuminate\Support\Str::slug($student->full_name) . '-' . ($student->nis ?? $student->id) . '.pdf';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.students.dossier-pdf', compact(
+            'student',
+            'schoolName',
+            'schoolAddress',
+            'schoolPhone',
+            'schoolEmail',
+            'principalName',
+            'principalNiy',
+            'logoSrc'
+        ))->setPaper('a4', 'portrait')->setOption('isRemoteEnabled', true);
+
+        $response = $pdf->download($fileName);
+
+        if ($request->filled('download_token')) {
+            $response->headers->setCookie(cookie('download_token', $request->query('download_token'), 1, '/', null, false, false));
+        }
+
+        return $response;
+    }
+
+    /**
+     * Display standalone printable official dossier for a student (A4 Portrait HTML).
+     */
+    public function dossierPrint($id): View
+    {
+        $student = Student::with([
+            'academicYear',
+            'classroom.classLevel',
+            'classroom.homeroomTeacher',
+            'gpkTeacher',
+            'classroomHistories' => function ($q) {
+                $q->with('academicYear')->orderBy('id', 'asc');
+            }
+        ])->findOrFail($id);
+
+        $info = $this->getSchoolAndPrincipalInfo();
+        $schoolName = $info['schoolName'];
+        $schoolAddress = $info['schoolAddress'];
+        $schoolPhone = $info['schoolPhone'];
+        $schoolEmail = $info['schoolEmail'];
+        $principalName = $info['principalName'];
+        $principalNiy = $info['principalNiy'];
+        $logoSrc = $info['logoSrc'];
+
+        return view('admin.students.print-dossier', compact(
+            'student',
+            'schoolName',
+            'schoolAddress',
+            'schoolPhone',
+            'schoolEmail',
+            'principalName',
+            'principalNiy',
+            'logoSrc'
+        ));
+    }
+
+    /**
+     * Download comprehensive individual student dossier as Excel (.xlsx).
+     */
+    public function dossierExcel(Request $request, $id)
+    {
+        if ($request->filled('download_token')) {
+            @setcookie('download_token', $request->query('download_token'), time() + 60, '/', '', false, false);
+        }
+
+        $student = Student::with([
+            'academicYear',
+            'classroom.classLevel',
+            'classroom.homeroomTeacher',
+            'gpkTeacher',
+            'classroomHistories' => function ($q) {
+                $q->with('academicYear')->orderBy('id', 'asc');
+            }
+        ])->findOrFail($id);
+
+        $info = $this->getSchoolAndPrincipalInfo();
+        $schoolName = $info['schoolName'];
+        $principalName = $info['principalName'];
+        $principalNiy = $info['principalNiy'];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Sanitize worksheet title (Excel forbids: \ / ? * : [ ] and max 31 characters)
+        $rawSheetName = 'Dossier ' . ($student->nickname ?: $student->full_name);
+        $cleanSheetName = trim(str_replace(['\\', '/', '?', '*', ':', '[', ']'], ' ', $rawSheetName));
+        $cleanSheetName = preg_replace('/\s+/', ' ', $cleanSheetName);
+        $cleanSheetName = mb_substr($cleanSheetName, 0, 31);
+        if (empty($cleanSheetName)) {
+            $cleanSheetName = 'Dossier Siswa';
+        }
+        $sheet->setTitle($cleanSheetName);
+
+        // Document Banner
+        $sheet->mergeCells('A1:D1');
+        $sheet->mergeCells('A2:D2');
+        $sheet->mergeCells('A3:D3');
+
+        $sheet->setCellValue('A1', strtoupper($schoolName));
+        $sheet->setCellValue('A2', 'LEMBAR DOSSIER & BUKU INDUK SISWA: ' . strtoupper($student->full_name));
+        $sheet->setCellValue('A3', 'Dicetak melalui SIM Akademik pada ' . date('d F Y, H:i') . ' WIB');
+
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(13)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF1E1B4B'));
+        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF4338CA'));
+        $sheet->getStyle('A3')->getFont()->setItalic(true)->setSize(8.5)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF64748B'));
+        $sheet->getStyle('A1:D3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER);
+
+        $sheet->getRowDimension(1)->setRowHeight(24);
+        $sheet->getRowDimension(2)->setRowHeight(20);
+        $sheet->getRowDimension(3)->setRowHeight(18);
+
+        $row = 5;
+
+        $addSectionHeader = function ($title, $color = 'FF4F46E5') use ($sheet, &$row) {
+            $sheet->mergeCells("A{$row}:D{$row}");
+            $sheet->setCellValue("A{$row}", $title);
+            $sheet->getStyle("A{$row}:D{$row}")->getFont()->setBold(true)->setSize(9.5)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFFFFFFF'));
+            $sheet->getStyle("A{$row}:D{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($color);
+            $sheet->getStyle("A{$row}:D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER)->setIndent(1);
+            $sheet->getRowDimension($row)->setRowHeight(22);
+            $row++;
+        };
+
+        $addDataRow = function ($label1, $val1, $label2 = '', $val2 = '') use ($sheet, &$row) {
+            $sheet->setCellValue("A{$row}", $label1);
+            $sheet->setCellValueExplicit("B{$row}", (string) ($val1 ?? '-'), DataType::TYPE_STRING);
+            $sheet->setCellValue("C{$row}", $label2);
+            $sheet->setCellValueExplicit("D{$row}", (string) ($val2 ?? '-'), DataType::TYPE_STRING);
+
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(8.5)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF475569'));
+            $sheet->getStyle("A{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8FAFC');
+            $sheet->getStyle("B{$row}")->getFont()->setSize(8.5)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF0F172A'));
+
+            if (!empty($label2)) {
+                $sheet->getStyle("C{$row}")->getFont()->setBold(true)->setSize(8.5)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF475569'));
+                $sheet->getStyle("C{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8FAFC');
+                $sheet->getStyle("D{$row}")->getFont()->setSize(8.5)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF0F172A'));
+            }
+
+            $sheet->getStyle("A{$row}:D{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFE2E8F0');
+            $sheet->getStyle("A{$row}:D{$row}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->getRowDimension($row)->setRowHeight(19);
+            $row++;
+        };
+
+        // 1. IDENTITAS POKOK & LEGALITAS
+        $addSectionHeader('1. IDENTITAS POKOK & LEGALITAS KEPENDUDUKAN (DAPODIK)', 'FF0284C7');
+        $addDataRow('Nama Lengkap Siswa', strtoupper($student->full_name), 'Nama Panggilan', $student->nickname ?? '-');
+        $addDataRow('Jenis Kelamin', $student->gender == 'L' ? 'Laki-laki' : 'Perempuan', 'Nomor Induk Siswa (NIS)', $student->nis ?? '-');
+        $addDataRow('NISN', $student->nisn ?? '-', 'Nomor Induk Kependudukan (NIK)', $student->nik ?? '-');
+        $addDataRow('Nomor Kartu Keluarga (KK)', $student->no_kk ?? '-', 'No. Akta Kelahiran', $student->birth_certificate_no ?? ($student->no_akta ?? '-'));
+        $addDataRow('Tempat Lahir', $student->birth_place ?? '-', 'Tanggal Lahir', $student->birth_date ? $student->birth_date->translatedFormat('d F Y') : '-');
+        $addDataRow('Usia Saat Ini', $student->age, 'Agama & Kepercayaan', $student->religion ?? 'Islam');
+        $addDataRow('Kewarganegaraan', $student->citizenship ?? 'Indonesia (WNI)', 'Anak Ke- / Jml Saudara', 'Anak ke-' . ($student->child_order ?? '-') . ' dari ' . ($student->siblings_count ?? '-') . ' bersaudara');
+        $addDataRow('Kategori Siswa', $student->student_type ?? 'Reguler', 'Kebutuhan Khusus (PDBK)', $student->special_needs_type ?? 'Tidak Ada');
+        $addDataRow('PIN Akses Kios Presensi', $student->pin_access ?? '-', 'Suku Bangsa', $student->ethnicity ?? '-');
+
+        // 2. PENEMPATAN AKADEMIK & ROMBEL
+        $row++;
+        $addSectionHeader('2. PENEMPATAN AKADEMIK & ROMBONGAN BELAJAR', 'FF4F46E5');
+        $addDataRow('Tahun Ajaran Aktif', $student->academicYear?->name ?? '-', 'Status Siswa', strtoupper($student->status ?? 'Aktif'));
+        $addDataRow('Tingkat / Grade', $student->classroom?->classLevel?->name ?? 'Tingkat 7', 'Rombongan Belajar (Rombel)', $student->classroom?->name ?? '-');
+        $addDataRow('Wali Kelas', $student->classroom?->homeroomTeacher?->name ?? '-', 'Guru Pendamping Khusus (GPK)', $student->gpkTeacher?->name ?? 'Tidak Ada GPK Khusus');
+
+        // 3. ALAMAT & DOMISILI
+        $row++;
+        $addSectionHeader('3. ALAMAT TINGGAL & LINGKUNGAN DOMISILI', 'FF0D9488');
+        $addDataRow('Alamat Lengkap', $student->address ?? '-', 'RT / RW & Dusun', 'RT ' . ($student->rt ?? '-') . ' / RW ' . ($student->rw ?? '-') . ' & Dusun: ' . ($student->dusun ?? '-'));
+        $addDataRow('Kelurahan / Desa', $student->village ?? ($student->kelurahan ?? '-'), 'Kecamatan', $student->district ?? ($student->kecamatan ?? '-'));
+        $addDataRow('Kota / Kabupaten', $student->city ?? '-', 'Provinsi & Kode Pos', ($student->province ?? '-') . ' & ' . ($student->postal_code ?? '-'));
+        $addDataRow('Tinggal Bersama', $student->living_with ?? 'Orang Tua', 'Alat Transportasi', $student->transportation ?? '-');
+        $addDataRow('Jarak ke Sekolah', $student->distance_to_school ? $student->distance_to_school . ' km' : '-', 'Waktu Tempuh', $student->travel_time_minutes ? $student->travel_time_minutes . ' menit' : '-');
+
+        // 4. DATA ORANG TUA & WALI
+        $row++;
+        $addSectionHeader('4. DATA ORANG TUA, WALI & KONTAK DARURAT', 'FF059669');
+        $fatherFullName = trim(($student->father_title_front ?? '') . ' ' . ($student->father_name ?? '-') . ' ' . ($student->father_title_back ?? '')) ?: '-';
+        $motherFullName = trim(($student->mother_title_front ?? '') . ' ' . ($student->mother_name ?? '-') . ' ' . ($student->mother_title_back ?? '')) ?: '-';
+        $addDataRow('Nama Ayah Kandung', $fatherFullName, 'Nama Ibu Kandung', $motherFullName);
+        $addDataRow('NIK Ayah', $student->father_nik ?? '-', 'NIK Ibu', $student->mother_nik ?? '-');
+        $addDataRow('Pendidikan Ayah', $student->father_education ?? '-', 'Pendidikan Ibu', $student->mother_education ?? '-');
+        $addDataRow('Pekerjaan Ayah', $student->father_job ?? '-', 'Pekerjaan Ibu', $student->mother_job ?? '-');
+        $addDataRow('Instansi Ayah', $student->father_company ?? '-', 'Instansi Ibu', $student->mother_company ?? '-');
+        $addDataRow('Penghasilan Ayah', $student->father_income ?? '-', 'Penghasilan Ibu', $student->mother_income ?? '-');
+        $addDataRow('No. HP / WA Ayah', $student->father_phone ?? '-', 'No. HP / WA Ibu', $student->mother_phone ?? '-');
+        if ($student->guardian_name) {
+            $addDataRow('Nama Wali Siswa', $student->guardian_name, 'Hubungan / No. HP Wali', ($student->guardian_relation ?? 'Wali') . ' / ' . ($student->guardian_phone ?? '-'));
+        }
+        $addDataRow('Kontak Darurat (Nama)', ($student->emergency_contact_name ?? '-') . ' (' . ($student->emergency_contact_relation ?? 'Keluarga') . ')', 'No. HP Kontak Darurat', $student->emergency_contact_phone ?? '-');
+
+        // 5. FISIK & REKAM MEDIS
+        $row++;
+        $addSectionHeader('5. FISIK, KESEHATAN & REKAM MEDIS UKS', 'FFD97706');
+        $addDataRow('Tinggi Badan (TB)', $student->height ? $student->height . ' cm' : '-', 'Berat Badan (BB)', $student->weight ? $student->weight . ' kg' : '-');
+        $addDataRow('Golongan Darah', $student->blood_type ?? '-', 'Ciri Fisik', 'Kulit: ' . ($student->skin_color ?? '-') . ', Rambut: ' . ($student->hair_type ?? '-'));
+        $addDataRow('Riwayat Penyakit Berat', $student->severe_disease_history ?? 'Tidak Ada', 'Riwayat Alergi', $student->allergy_history ?? 'Tidak Ada');
+
+        // 6. ASAL SEKOLAH & MINAT
+        $row++;
+        $addSectionHeader('6. ASAL SEKOLAH & MINAT BAKAT', 'FF7C3AED');
+        $addDataRow('Sekolah Asal (SD/MI)', $student->previous_school ?? '-', 'NPSN & Nilai Rata-rata', ($student->previous_school_npsn ?? '-') . ' & ' . ($student->previous_school_score ?? '-'));
+        $addDataRow('No. Seri Ijazah/SKL SD', $student->diploma_number ?? '-', 'Hobi & Cita-cita', ($student->student_hobby ?? '-') . ' & ' . ($student->student_aspiration ?? '-'));
+
+        // Signatures
+        $signRow = $row + 2;
+        $sheet->mergeCells("A{$signRow}:B{$signRow}");
+        $sheet->setCellValue("A{$signRow}", "Mengetahui,");
+        $sheet->setCellValue("A" . ($signRow + 1), "Orang Tua / Wali Siswa");
+        $sheet->setCellValue("A" . ($signRow + 4), "( " . ($student->father_name ?? ($student->mother_name ?? ($student->guardian_name ?? '..................................'))) . " )");
+        $sheet->setCellValue("A" . ($signRow + 5), "Orang Tua / Wali");
+
+        $sheet->mergeCells("C{$signRow}:D{$signRow}");
+        $sheet->setCellValue("C{$signRow}", "Malang, " . \Carbon\Carbon::now()->translatedFormat('d F Y'));
+        $sheet->setCellValue("C" . ($signRow + 1), "Kepala Sekolah " . $schoolName);
+        $sheet->setCellValue("C" . ($signRow + 4), "( " . ($principalName ?? 'Kepala Sekolah') . " )");
+        $sheet->setCellValue("C" . ($signRow + 5), "NIY/NIP: " . ($principalNiy ?? '-'));
+
+        $sheet->getStyle("A{$signRow}:D" . ($signRow + 5))->getFont()->setSize(9);
+        $sheet->getStyle("A" . ($signRow + 1))->getFont()->setBold(true);
+        $sheet->getStyle("A" . ($signRow + 4))->getFont()->setBold(true);
+        $sheet->getStyle("C" . ($signRow + 1))->getFont()->setBold(true);
+        $sheet->getStyle("C" . ($signRow + 4))->getFont()->setBold(true);
+        $sheet->getStyle("A{$signRow}:D" . ($signRow + 5))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Column Dimensions
+        $sheet->getColumnDimension('A')->setWidth(26);
+        $sheet->getColumnDimension('B')->setWidth(38);
+        $sheet->getColumnDimension('C')->setWidth(26);
+        $sheet->getColumnDimension('D')->setWidth(38);
+
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'Dossier-Siswa-' . \Illuminate\Support\Str::slug($student->full_name) . '-' . ($student->nis ?? $student->id) . '.xlsx';
+
+        $response = response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+
+        if ($request->filled('download_token')) {
+            $response->headers->setCookie(cookie('download_token', $request->query('download_token'), 1, '/', null, false, false));
+        }
+
+        return $response;
+    }
+
+    /**
+     * Show single student detail (View / JSON) with full profile & lifecycle history.
+     */
+    public function show($id, ?Request $request = null): View|JsonResponse
     {
         $student = Student::with([
             'classroom.classLevel', 
@@ -816,58 +1163,123 @@ class StudentController extends Controller
             'classroomHistories.academicYear'
         ])->findOrFail($id);
 
-        // Hitung kelengkapan data (Completeness %)
-        $requiredFields = [
-            'nis', 'nik', 'full_name', 'gender', 'birth_place', 'birth_date', 
-            'religion', 'address', 'father_name', 'mother_name', 'parent_phone',
-            'no_kk', 'birth_certificate_no', 'blood_type'
-        ];
-        $filledCount = 0;
-        foreach ($requiredFields as $field) {
-            if (!empty($student->$field)) {
-                $filledCount++;
+        $req = $request ?: request();
+        if ($req && ($req->wantsJson() || $req->ajax())) {
+            // Hitung kelengkapan data (Completeness %)
+            $requiredFields = [
+                'nis', 'nik', 'full_name', 'gender', 'birth_place', 'birth_date', 
+                'religion', 'address', 'father_name', 'mother_name', 'parent_phone',
+                'no_kk', 'birth_certificate_no', 'blood_type'
+            ];
+            $filledCount = 0;
+            foreach ($requiredFields as $field) {
+                if (!empty($student->$field)) {
+                    $filledCount++;
+                }
+            }
+            $completenessPercent = round(($filledCount / count($requiredFields)) * 100);
+
+            return response()->json([
+                'success' => true,
+                'student' => $student->load(['gpkTeacher', 'classroom.classLevel', 'academicYear']),
+                'completeness_percent' => $completenessPercent,
+                'formatted_gender' => $student->formatted_gender,
+                'age' => $student->age,
+                'whatsapp_url' => $student->whatsapp_url,
+                'classroom_histories' => $student->classroomHistories()->with(['academicYear', 'classroom.classLevel', 'classroom.homeroomTeacher'])->get(),
+            ]);
+        }
+
+        return view('admin.students.show', compact('student'));
+    }
+
+    /**
+     * Show the standalone page for creating a new student.
+     */
+    public function create(Request $request): View
+    {
+        $activeAcademicYear = AcademicYear::where('is_active', true)->first();
+        $classLevels = ClassLevel::orderBy('order', 'asc')->get();
+        $classrooms = Classroom::with('classLevel')->where('is_active', true)->get();
+        $academicYears = AcademicYear::orderBy('name', 'desc')->get()->unique('name');
+        $teachers = Employee::whereIn('status', ['Active', 'aktif', 'active', 'Aktif'])->orderBy('name')->get();
+        $student = new Student();
+
+        // SPMB candidate prefill if query parameter spmb_candidate_id is provided
+        if ($request->filled('spmb_candidate_id')) {
+            $candidate = \App\Models\SpmbCandidate::find($request->spmb_candidate_id);
+            if ($candidate) {
+                $student->fill([
+                    'nisn' => $candidate->nisn,
+                    'nik' => $candidate->nik,
+                    'no_kk' => $candidate->no_kk,
+                    'full_name' => $candidate->full_name,
+                    'nickname' => $candidate->nickname,
+                    'gender' => in_array(strtolower((string)$candidate->gender), ['female', 'p', 'perempuan']) ? 'P' : 'L',
+                    'birth_place' => $candidate->birth_place,
+                    'birth_date' => $candidate->birth_date,
+                    'religion' => $candidate->religion ?: 'Islam',
+                    'address' => $candidate->address,
+                    'rt' => $candidate->rt,
+                    'rw' => $candidate->rw,
+                    'village' => $candidate->village,
+                    'district' => $candidate->district,
+                    'city' => $candidate->city,
+                    'province' => $candidate->province,
+                    'postal_code' => $candidate->postal_code,
+                    'child_number' => $candidate->child_number,
+                    'siblings_count' => $candidate->siblings_count,
+                    'blood_type' => $candidate->blood_type,
+                    'weight' => $candidate->weight,
+                    'height' => $candidate->height,
+                    'previous_school' => $candidate->previous_school,
+                    'previous_school_address' => $candidate->previous_school_address,
+                    'father_name' => $candidate->father_name,
+                    'father_nik' => $candidate->father_nik,
+                    'father_phone' => $candidate->father_phone,
+                    'father_job' => $candidate->father_job,
+                    'father_education' => $candidate->father_education,
+                    'mother_name' => $candidate->mother_name,
+                    'mother_nik' => $candidate->mother_nik,
+                    'mother_phone' => $candidate->mother_phone,
+                    'mother_job' => $candidate->mother_job,
+                    'mother_education' => $candidate->mother_education,
+                    'guardian_name' => $candidate->guardian_name,
+                    'guardian_phone' => $candidate->guardian_phone,
+                    'parent_phone' => $candidate->parent_phone ?: ($candidate->father_phone ?: $candidate->mother_phone),
+                    'parent_email' => $candidate->parent_email,
+                    'student_photo_url' => $candidate->student_photo_url,
+                    'student_type' => $candidate->student_type ?? 'REGULER',
+                    'special_needs_type' => $candidate->special_needs_type,
+                    'spmb_candidate_id' => $candidate->id,
+                    'status' => 'aktif',
+                    'notes' => "Data calon murid diimpor dari SPMB (" . ($candidate->registration_number ?? $candidate->id) . ")",
+                ]);
             }
         }
-        $completenessPercent = round(($filledCount / count($requiredFields)) * 100);
 
-        return response()->json([
-            'success' => true,
-            'student' => $student->load(['gpkTeacher', 'classroom.classLevel', 'academicYear']),
-            'completeness_percent' => $completenessPercent,
-            'formatted_gender' => $student->formatted_gender,
-            'age' => $student->age,
-            'whatsapp_url' => $student->whatsapp_url,
-            'classroom_histories' => $student->classroomHistories()->with(['academicYear', 'classroom.classLevel', 'classroom.homeroomTeacher'])->get(),
-        ]);
+        return view('admin.students.create', compact('student', 'classrooms', 'classLevels', 'academicYears', 'activeAcademicYear', 'teachers'));
     }
 
     /**
-     * Show the form for creating a new student.
+     * Show the standalone page for editing the specified student.
      */
-    public function create()
+    public function edit($id): View
     {
-        return redirect()->route('students.index', ['open_create' => 1]);
-    }
+        $student = Student::with(['classroom.classLevel', 'academicYear', 'gpkTeacher'])->findOrFail($id);
+        $activeAcademicYear = AcademicYear::where('is_active', true)->first();
+        $classLevels = ClassLevel::orderBy('order', 'asc')->get();
+        $classrooms = Classroom::with('classLevel')->where('is_active', true)->get();
+        $academicYears = AcademicYear::orderBy('name', 'desc')->get()->unique('name');
+        $teachers = Employee::whereIn('status', ['Active', 'aktif', 'active', 'Aktif'])->orderBy('name')->get();
 
-    /**
-     * Show the form for editing the specified student.
-     * Redirects to the students index with the student's edit modal triggered.
-     */
-    public function edit($id)
-    {
-        $student = Student::findOrFail($id);
-
-        return redirect()->route('students.index', [
-            'search' => $student->nis ?: $student->full_name,
-            'edit_student_id' => $student->id,
-            'academic_year_id' => $student->academic_year_id,
-        ]);
+        return view('admin.students.edit', compact('student', 'classrooms', 'classLevels', 'academicYears', 'activeAcademicYear', 'teachers'));
     }
 
     /**
      * Store a newly created student in storage (All 7 categories).
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             // 1. Identitas & Legalitas
@@ -1070,17 +1482,24 @@ class StudentController extends Controller
             ]);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => "Data siswa {$student->full_name} berhasil ditambahkan.",
-            'student' => $student->load('gpkTeacher'),
-        ]);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Data siswa {$student->full_name} berhasil ditambahkan.",
+                'student' => $student->load('gpkTeacher'),
+                'student_id' => $student->id,
+                'redirect_url' => route('students.show', $student->id),
+            ]);
+        }
+
+        return redirect()->route('students.show', $student->id)
+            ->with('success', "Data siswa {$student->full_name} berhasil ditambahkan.");
     }
 
     /**
      * Update student details (All 7 categories).
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(Request $request, $id): JsonResponse|RedirectResponse
     {
         $student = Student::findOrFail($id);
 
@@ -1271,11 +1690,18 @@ class StudentController extends Controller
             ]);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => "Data siswa {$student->full_name} berhasil diperbarui.",
-            'student' => $student,
-        ]);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Data siswa {$student->full_name} berhasil diperbarui.",
+                'student' => $student,
+                'student_id' => $student->id,
+                'redirect_url' => route('students.show', $student->id),
+            ]);
+        }
+
+        return redirect()->route('students.show', $student->id)
+            ->with('success', "Data siswa {$student->full_name} berhasil diperbarui.");
     }
 
     /**
@@ -1724,12 +2150,18 @@ class StudentController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        return response()->streamDownload(function () use ($writer) {
+        $response = response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
         }, 'Template_Import_Siswa_SMP_Lengkap.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'max-age=0',
         ]);
+
+        if (request()->filled('download_token')) {
+            $response->headers->setCookie(cookie('download_token', request()->query('download_token'), 1, '/', null, false, false));
+        }
+
+        return $response;
     }
 
     /**
