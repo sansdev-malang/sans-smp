@@ -110,6 +110,15 @@
                         @endforeach
                     </select>
 
+                    <!-- Position -->
+                    <select name="position" onchange="this.form.submit()"
+                        class="h-9 px-2 flex-1 sm:flex-initial sm:w-36 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer">
+                        <option value="">Semua Jabatan</option>
+                        @foreach($positions ?? [] as $pos)
+                            <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                        @endforeach
+                    </select>
+
                     <!-- Unit -->
                     @if(!config('app.school_unit'))
                     <select name="unit" onchange="this.form.submit()"
@@ -130,7 +139,7 @@
                         <option value="Inactive" {{ request('status') == 'Inactive' ? 'selected' : '' }}>Nonaktif</option>
                     </select>
 
-                    @if(request()->anyFilled(['search', 'type', 'unit', 'status']))
+                    @if(request()->anyFilled(['search', 'type', 'position', 'unit', 'status']) || (request('per_page') && request('per_page') != 10))
                         <a href="{{ route('employees.index') }}" class="h-9 px-3 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 rounded-lg transition-colors" title="Reset Filter">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                         </a>
