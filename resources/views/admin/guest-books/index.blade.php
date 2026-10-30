@@ -79,50 +79,12 @@
 
 
         <!-- ========================================================================= -->
-        <!-- ========================================================================= -->
-        <!-- TABLE CONTAINER WITH CATEGORY TABS & FILTER TOOLBAR                       -->
+        <!-- TABLE CONTAINER WITH FILTER TOOLBAR                                       -->
         <!-- ========================================================================= -->
         <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden transition-all w-full text-left">
-            <!-- Category Tabs Header Bar -->
-            <div class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 px-3 sm:px-4 pt-2.5 flex items-center justify-between gap-2 overflow-x-auto">
-                <div class="flex items-center gap-1.5 sm:gap-2">
-                    <!-- Tab: Semua -->
-                    <a href="{{ route('guest-books.index', array_merge(request()->query(), ['category' => 'all', 'page' => 1])) }}"
-                        class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-t-lg transition-all border-b-2 whitespace-nowrap {{ $selectedCategory === 'all' ? 'border-teal-600 text-teal-700 dark:text-teal-400 bg-white dark:bg-slate-900 shadow-xs' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/40' }}">
-                        <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
-                        <span>Semua</span>
-                        <span class="px-1.5 py-0.5 text-[10px] rounded-full {{ $selectedCategory === 'all' ? 'bg-teal-100 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300' : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }} font-bold font-mono">
-                            {{ $stats['total'] ?? 0 }}
-                        </span>
-                    </a>
-
-                    <!-- Dynamic Category Tabs -->
-                    @foreach($categories as $c)
-                        @php
-                            $cName = is_object($c) ? $c->name : $c;
-                            $cIcon = is_object($c) ? ($c->icon ?: 'briefcase') : 'briefcase';
-                            $isActiveTab = in_array($cName, ['Puskesmas/Dinkes', 'Puskesmas', 'Dinkes'])
-                                ? in_array($selectedCategory, ['Puskesmas/Dinkes', 'Puskesmas', 'Dinkes'])
-                                : ($selectedCategory === $cName);
-                            $activeTabClass = is_object($c) ? $c->active_tab_class : 'border-teal-500 text-teal-700 dark:text-teal-400';
-                            $activeBadgeClass = is_object($c) ? $c->active_tab_badge_class : 'bg-teal-100 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300';
-                        @endphp
-                        <a href="{{ route('guest-books.index', array_merge(request()->query(), ['category' => $cName, 'page' => 1])) }}"
-                            class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-t-lg transition-all border-b-2 whitespace-nowrap {{ $isActiveTab ? $activeTabClass . ' bg-white dark:bg-slate-900 shadow-xs' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/40' }}">
-                            <i data-lucide="{{ $cIcon }}" class="w-3.5 h-3.5"></i>
-                            <span>{{ $cName }}</span>
-                            <span class="px-1.5 py-0.5 text-[10px] rounded-full {{ $isActiveTab ? $activeBadgeClass : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }} font-bold font-mono">
-                                {{ $stats[$cName] ?? 0 }}
-                            </span>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-
             <!-- Table Header Bar: Filters Toolbar -->
             <div class="p-2 sm:px-3 sm:py-2.5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
                 <form method="GET" action="{{ route('guest-books.index') }}" id="guestFilterForm" class="flex items-center gap-1.5 flex-wrap shrink-0">
-                    <input type="hidden" name="category" value="{{ $selectedCategory }}">
 
                     <!-- Search Input -->
                     <div x-data="{ searchVal: '{{ $search }}' }" class="flex items-center w-48 sm:w-64 search-container bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-teal-500 focus-within:border-teal-500 shrink-0">
@@ -141,8 +103,8 @@
                         </button>
                     </div>
 
-                    <!-- 1. Filter Tahun -->
-                    <select name="year" onchange="this.form.submit()"
+                    <!-- 1. Filter Periode: Tahun -->
+                    <select name="year" onchange="this.form.submit()" title="Filter Tahun"
                         class="h-8 pl-2.5 pr-7 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer shrink-0">
                         @foreach($yearsList as $yr)
                             <option value="{{ $yr }}" {{ $selectedYear == $yr ? 'selected' : '' }}>
@@ -151,8 +113,8 @@
                         @endforeach
                     </select>
 
-                    <!-- 2. Filter Bulan -->
-                    <select name="month" onchange="this.form.submit()"
+                    <!-- 2. Filter Periode: Bulan -->
+                    <select name="month" onchange="this.form.submit()" title="Filter Bulan"
                         class="h-8 pl-2.5 pr-7 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer shrink-0">
                         @foreach($monthNames as $mNum => $mLabel)
                             <option value="{{ $mNum }}" {{ $selectedMonth == $mNum ? 'selected' : '' }}>
@@ -161,7 +123,27 @@
                         @endforeach
                     </select>
 
-                    <!-- 3. Jumlah Baris (per_page) -->
+                    <!-- 3. Filter Kategori (Setelah Periode) -->
+                    <select name="category" onchange="this.form.submit()" title="Filter Kategori Kunjungan"
+                        class="h-8 pl-2.5 pr-7 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer shrink-0">
+                        <option value="all" {{ ($selectedCategory === 'all' || empty($selectedCategory)) ? 'selected' : '' }}>
+                            Semua Kategori ({{ $stats['total'] ?? 0 }})
+                        </option>
+                        @foreach($categories as $c)
+                            @php
+                                $cName = is_object($c) ? $c->name : $c;
+                                $isSelected = in_array($cName, ['Puskesmas/Dinkes', 'Puskesmas', 'Dinkes'])
+                                    ? in_array($selectedCategory, ['Puskesmas/Dinkes', 'Puskesmas', 'Dinkes'])
+                                    : ($selectedCategory === $cName);
+                                $count = $stats[$cName] ?? 0;
+                            @endphp
+                            <option value="{{ $cName }}" {{ $isSelected ? 'selected' : '' }}>
+                                {{ $cName }} ({{ $count }})
+                            </option>
+                        @endforeach
+                    </select>
+
+                    <!-- 4. Jumlah Baris (per_page) -->
                     <select name="per_page" onchange="this.form.submit()" title="Jumlah data per halaman"
                         class="h-8 pl-2.5 pr-6 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer shrink-0">
                         <option value="10" {{ ($perPage ?? 15) == 10 ? 'selected' : '' }}>10 baris</option>
@@ -173,18 +155,18 @@
                     </select>
 
                     <!-- Reset Button -->
-                    @if($search || $selectedMonth != \Carbon\Carbon::now()->month || $selectedYear != 2026 || (request()->filled('per_page') && request('per_page') != 15))
-                        <a href="{{ route('guest-books.index', ['category' => $selectedCategory]) }}" class="h-8 w-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 rounded-lg transition-colors shrink-0" title="Reset Filter">
+                    @if($search || $selectedMonth != \Carbon\Carbon::now()->month || $selectedYear != 2026 || ($selectedCategory && $selectedCategory !== 'all') || (request()->filled('per_page') && request('per_page') != 15))
+                        <a href="{{ route('guest-books.index') }}" class="h-8 w-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 rounded-lg transition-colors shrink-0" title="Reset Semua Filter">
                             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                         </a>
                     @endif
                 </form>
 
-                <!-- Active tab helper badge -->
+                <!-- Data Count Badge -->
                 <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-auto shrink-0 flex items-center gap-1.5">
-                    <span>Kategori aktif:</span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {{ $selectedCategory === 'all' ? 'Semua Kategori' : $selectedCategory }}
+                    <span>Ditemukan:</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-mono">
+                        {{ $guests->total() }} data
                     </span>
                 </div>
             </div>
