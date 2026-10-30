@@ -127,7 +127,7 @@
                     <select name="category" onchange="this.form.submit()" title="Filter Kategori Kunjungan"
                         class="h-8 pl-2.5 pr-7 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer shrink-0">
                         <option value="all" {{ ($selectedCategory === 'all' || empty($selectedCategory)) ? 'selected' : '' }}>
-                            Semua Kategori ({{ $stats['total'] ?? 0 }})
+                            Semua Kategori
                         </option>
                         @foreach($categories as $c)
                             @php
@@ -135,10 +135,9 @@
                                 $isSelected = in_array($cName, ['Puskesmas/Dinkes', 'Puskesmas', 'Dinkes'])
                                     ? in_array($selectedCategory, ['Puskesmas/Dinkes', 'Puskesmas', 'Dinkes'])
                                     : ($selectedCategory === $cName);
-                                $count = $stats[$cName] ?? 0;
                             @endphp
                             <option value="{{ $cName }}" {{ $isSelected ? 'selected' : '' }}>
-                                {{ $cName }} ({{ $count }})
+                                {{ $cName }}
                             </option>
                         @endforeach
                     </select>
