@@ -12,7 +12,7 @@
     $showPicketMenu = $isAdmin || ($empId && \Illuminate\Support\Facades\Cache::remember('user_has_picket_' . $empId, 300, function() use ($empId) {
         return \App\Models\PicketSchedule::where('employee_id', $empId)->exists();
     }));
-    // Menu E-Rapor disembunyikan sementara, khusus Super Admin saja
+    // Integrasi Rapor & CBT
     $canAccessRapor = $isSuperAdmin;
     $canAccessCbt = auth()->user()?->canAccessCbt();
     $raporLink = '#';
@@ -63,7 +63,7 @@
 
     <!-- App Brand / Dashboard Link -->
     <a href="{{ route('dashboard') }}"
-        class="workspace-selector flex items-center justify-between p-2 mb-4 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg cursor-pointer transition-colors relative group shrink-0">
+        class="workspace-selector flex items-center justify-between p-2 mb-3 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg cursor-pointer transition-colors relative group shrink-0">
         <div class="flex items-center gap-2.5">
             @if (setting('app_logo'))
                 <img src="{{ asset('storage/' . setting('app_logo')) }}" alt="Logo" class="w-8 h-8 rounded-lg object-cover shrink-0 shadow-sm">
@@ -89,7 +89,7 @@
     </a>
 
     <!-- Grouped Navigation Links (sidebar-07 style) -->
-    <div id="sidebar-nav-container" class="flex-1 min-h-0 space-y-4 overflow-y-auto px-1 py-2 custom-sidebar-scroll">
+    <div id="sidebar-nav-container" class="flex-1 min-h-0 space-y-4 overflow-y-auto px-1 py-1 custom-sidebar-scroll">
         <!-- Dashboard Link (At the very top, outside groups) -->
         <div class="space-y-1">
             <a href="{{ route('dashboard') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg
@@ -104,156 +104,104 @@
             </a>
         </div>
 
-        <!-- Group 1: Layanan Pegawai (Personal Guru & Pegawai) -->
-        <div>
-            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Layanan Pegawai
-            </h3>
-            <nav class="space-y-1">
-
-                <a href="{{ route('attendances.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('attendances.index') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="scan-face" class="menu-icon w-4 h-4 shrink-0"></i>
-                    <span class="menu-text">Data Kehadiran</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Data Kehadiran
-                    </span>
-                </a>
-
-                @if($empId)
-                <a href="{{ route('my-leaves.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('my-leaves.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="file-signature" class="menu-icon w-4 h-4 shrink-0"></i>
-                    <span class="menu-text">Pengajuan Izin</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Pengajuan Izin
-                    </span>
-                </a>
-                @endif
-
-                @if(auth()->user()->role !== 'employee')
-                <a href="{{ route('bonus-reports.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('bonus-reports.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="award" class="menu-icon w-4 h-4 shrink-0"></i>
-                    <span class="menu-text">Uang Kehadiran</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Uang Kehadiran
-                    </span>
-                </a>
-
-                <a href="{{ route('attendance-percentage-reports.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('attendance-percentage-reports.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="pie-chart" class="menu-icon w-4 h-4 shrink-0"></i>
-                    <span class="menu-text">Persentase Kehadiran</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Persentase Kehadiran
-                    </span>
-                </a>
-                @endif
-
-                <a href="{{ route('payslips.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('payslips.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="file-text" class="menu-icon w-4 h-4 shrink-0"></i>
-                    <span class="menu-text">Slip Gaji</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Slip Gaji
-                    </span>
-                </a>
-
-                @if($showPicketMenu)
-                <a href="{{ route('picket-schedules.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('picket-schedules.index') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
-                    <i data-lucide="calendar-days" class="menu-icon w-4 h-4 shrink-0"></i>
-                    <span class="menu-text">Jadwal Piket</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Jadwal Piket
-                    </span>
-                </a>
-                @endif
-
-                <a href="{{ route('announcements.index') }}"
-                    class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('announcements.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} transition-colors text-xs relative group">
-                    <i data-lucide="bell" class="menu-icon w-4 h-4 shrink-0"></i>
-                    <span class="menu-text">Pengumuman</span>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Pengumuman
-                    </span>
-                </a>
-            </nav>
-        </div>
-
-        <!-- Group 2: Kesiswaan & Akademik -->
         @if($isAdmin || $canAccessRapor || $canAccessCbt)
+        <!-- ==========================================
+             1. AKADEMIK & KURIKULUM
+             ========================================== -->
         <div>
             <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Kesiswaan & Akademik
+                Akademik & Kurikulum
             </h3>
             <nav class="space-y-1">
                 @if($isAdmin)
-                <!-- SPMB -->
-                <a href="{{ route('spmb.candidates.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
-                    {{ Request::routeIs('spmb.candidates.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
+                <!-- Dropdown: Master Akademik -->
+                <div x-data="{ openAcademic: {{ Request::routeIs('classrooms.*', 'class-levels.*', 'academic-years.*', 'semesters.*') ? 'true' : 'false' }} }">
+                    <button @click="openAcademic = !openAcademic"
+                        class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer {{ Request::routeIs('classrooms.*', 'class-levels.*', 'academic-years.*', 'semesters.*') ? 'text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800 font-medium' : '' }}">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="layers" class="menu-icon w-4 h-4 shrink-0"></i>
+                            <span class="menu-text">Master Akademik</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="chevron-icon w-3.5 h-3.5 transition-transform duration-200"
+                            :style="openAcademic ? 'transform: rotate(90deg);' : ''"></i>
+                        <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                            Master Akademik
+                        </span>
+                    </button>
+
+                    <div x-show="openAcademic" x-collapse
+                        class="sidebar-dropdown-content mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1">
+                        <a href="{{ route('academic-years.index') }}"
+                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('academic-years.*', 'semesters.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <span>Tahun Ajaran & Semester</span>
+                        </a>
+                        <a href="{{ route('classrooms.index') }}"
+                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('classrooms.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <span>Rombongan Belajar</span>
+                        </a>
+                        <a href="{{ route('class-levels.index') }}"
+                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('class-levels.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <span>Tingkat Kelas</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mata Pelajaran -->
+                <a href="{{ route('subjects.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                    {{ Request::routeIs('subjects.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
                     text-xs relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="user-plus" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
-                        <span class="menu-text">SPMB</span>
+                        <i data-lucide="book-open" class="menu-icon w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0"></i>
+                        <span class="menu-text">Mata Pelajaran</span>
                     </div>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        SPMB
+                        Mata Pelajaran
                     </span>
                 </a>
 
-                <!-- Data Siswa -->
-                <a href="{{ route('students.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
-                    {{ Request::routeIs('students.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
+                <!-- Penugasan Guru & Wali Kelas -->
+                <a href="{{ route('homeroom-assignments.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                    {{ Request::routeIs('homeroom-assignments.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
                     text-xs relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="users" class="menu-icon w-4 h-4 shrink-0"></i>
-                        <span class="menu-text">Data Siswa</span>
+                        <i data-lucide="graduation-cap" class="menu-icon w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0"></i>
+                        <span class="menu-text">Penugasan Guru (Formasi)</span>
                     </div>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Data Siswa
+                        Penugasan Guru & Wali Kelas
                     </span>
                 </a>
 
-                <!-- Rekapitulasi Rombel (Laporan Sheet 2 TU) -->
+                <!-- Rekapitulasi Rombel -->
                 <a href="{{ route('student-reports.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
                     {{ Request::routeIs('student-reports.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
                     text-xs relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="file-bar-chart-2" class="menu-icon w-4 h-4 shrink-0"></i>
+                        <i data-lucide="file-bar-chart-2" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
                         <span class="menu-text">Rekapitulasi Rombel</span>
                     </div>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Rekapitulasi Rombel
-                    </span>
-                </a>
-
-                <!-- Presensi Siswa -->
-                <a href="{{ route('student-attendances.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
-                    {{ Request::routeIs('student-attendances.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
-                    text-xs relative group">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="calendar-check" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
-                        <span class="menu-text">Presensi Siswa</span>
-                    </div>
-                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Presensi Siswa
+                        Rekapitulasi Rombel (Laporan TU)
                     </span>
                 </a>
                 @endif
 
+                <!-- Integrasi E-Rapor & CBT Hub -->
                 @if($canAccessRapor)
-                <!-- Dropdown: Rapor & Ujian (CBT) (Wali Kelas & Admin) -->
                 <div x-data="{ openRapor: false }">
                     <button @click="openRapor = !openRapor"
                         class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer">
                         <div class="flex items-center gap-3">
-                            <i data-lucide="award" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
-                            <span class="menu-text">Rapor & Ujian (CBT)</span>
+                            <i data-lucide="award" class="menu-icon w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0"></i>
+                            <span class="menu-text">E-Rapor & CBT (SSO)</span>
                         </div>
                         <i data-lucide="chevron-right" class="chevron-icon w-3.5 h-3.5 transition-transform duration-200"
                             :style="openRapor ? 'transform: rotate(90deg);' : ''"></i>
                         <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                            Rapor & Ujian (CBT)
+                            E-Rapor & CBT Hub
                         </span>
                     </button>
 
-                    <!-- Dropdown content with line connector -->
                     <div x-show="openRapor" x-collapse
                         class="sidebar-dropdown-content mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1">
                         <!-- Aplikasi E-Rapor -->
@@ -278,11 +226,10 @@
                     </div>
                 </div>
                 @elseif($canAccessCbt)
-                <!-- Aplikasi CBT (Untuk Guru Non-Wali Kelas) -->
                 <a href="{{ $cbtLink }}" target="_blank"
                     class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 text-xs font-medium relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="award" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
+                        <i data-lucide="award" class="menu-icon w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0"></i>
                         <span class="menu-text">Aplikasi CBT</span>
                     </div>
                     <div class="flex items-center gap-1.5">
@@ -294,181 +241,215 @@
                     </span>
                 </a>
                 @endif
+            </nav>
+        </div>
+        @endif
 
-                @if($isAdmin)
-                <!-- Dropdown: Siklus & Alumni -->
+        @if($isAdmin)
+        <!-- ==========================================
+             2. KESISWAAN
+             ========================================== -->
+        <div>
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Kesiswaan
+            </h3>
+            <nav class="space-y-1">
+                <!-- SPMB -->
+                <a href="{{ route('spmb.candidates.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                    {{ Request::routeIs('spmb.candidates.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
+                    text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="user-plus" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
+                        <span class="menu-text">SPMB</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        SPMB (Penerimaan Siswa Baru)
+                    </span>
+                </a>
+
+                <!-- Data Siswa -->
+                <a href="{{ route('students.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                    {{ Request::routeIs('students.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
+                    text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="users" class="menu-icon w-4 h-4 shrink-0"></i>
+                        <span class="menu-text">Data Siswa Aktif</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Data Siswa Aktif
+                    </span>
+                </a>
+
+                <!-- Presensi Siswa -->
+                <a href="{{ route('student-attendances.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                    {{ Request::routeIs('student-attendances.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }}
+                    text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="calendar-check" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
+                        <span class="menu-text">Presensi Siswa</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Presensi Siswa
+                    </span>
+                </a>
+
+                <!-- Dropdown: Siklus & Kelulusan -->
                 <div x-data="{ openLifecycle: {{ Request::routeIs('promotions.*', 'alumni.*', 'student-archives.*') ? 'true' : 'false' }} }">
                     <button @click="openLifecycle = !openLifecycle"
                         class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer {{ Request::routeIs('promotions.*', 'alumni.*', 'student-archives.*') ? 'text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800 font-medium' : '' }}">
                         <div class="flex items-center gap-3">
                             <i data-lucide="archive" class="menu-icon w-4 h-4 shrink-0"></i>
-                            <span class="menu-text">Siklus & Alumni</span>
+                            <span class="menu-text">Siklus & Kelulusan</span>
                         </div>
                         <i data-lucide="chevron-right" class="chevron-icon w-3.5 h-3.5 transition-transform duration-200"
                             :style="openLifecycle ? 'transform: rotate(90deg);' : ''"></i>
                         <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                            Siklus & Alumni
+                            Siklus & Kelulusan
                         </span>
                     </button>
 
-                    <!-- Dropdown content with line connector -->
                     <div x-show="openLifecycle" x-collapse
                         class="sidebar-dropdown-content mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1">
-                        <!-- Kenaikan & Kelulusan -->
                         <a href="{{ route('promotions.index') }}"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('promotions.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
                             <span>Kenaikan & Kelulusan</span>
                         </a>
-
-                        <!-- Buku Induk Alumni -->
                         <a href="{{ route('alumni.index') }}"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('alumni.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
                             <span>Buku Induk Alumni</span>
                         </a>
-
-                        <!-- Arsip Dokumen Siswa -->
                         <a href="{{ route('student-archives.index') }}"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('student-archives.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
                             <span>Arsip Dokumen Siswa</span>
                         </a>
                     </div>
                 </div>
-
-                <!-- Dropdown: Master Akademik -->
-                <div x-data="{ openAcademic: {{ Request::routeIs('classrooms.*', 'class-levels.*', 'academic-years.*', 'semesters.*') ? 'true' : 'false' }} }">
-                    <button @click="openAcademic = !openAcademic"
-                        class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer {{ Request::routeIs('classrooms.*', 'class-levels.*', 'academic-years.*', 'semesters.*') ? 'text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800 font-medium' : '' }}">
-                        <div class="flex items-center gap-3">
-                            <i data-lucide="layers" class="menu-icon w-4 h-4 shrink-0"></i>
-                            <span class="menu-text">Master Akademik</span>
-                        </div>
-                        <i data-lucide="chevron-right" class="chevron-icon w-3.5 h-3.5 transition-transform duration-200"
-                            :style="openAcademic ? 'transform: rotate(90deg);' : ''"></i>
-                        <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                            Master Akademik
-                        </span>
-                    </button>
-
-                    <!-- Dropdown content with line connector -->
-                    <div x-show="openAcademic" x-collapse
-                        class="sidebar-dropdown-content mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1">
-                        <a href="{{ route('classrooms.index') }}"
-                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('classrooms.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Rombongan Belajar</span>
-                        </a>
-                        <a href="{{ route('class-levels.index') }}"
-                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('class-levels.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Tingkat Kelas</span>
-                        </a>
-                        <a href="{{ route('academic-years.index') }}"
-                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('academic-years.*', 'semesters.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Tahun Ajaran & Semester</span>
-                        </a>
-                    </div>
-                </div>
-                @endif
             </nav>
         </div>
-        @endif
 
-        @if($isAdmin)
-        <!-- Group 3: Pendidik & Kepegawaian -->
+        <!-- ==========================================
+             3. KEPEGAWAIAN & SDM
+             ========================================== -->
         <div>
             <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Pendidik & Kepegawaian
+                Kepegawaian & SDM
             </h3>
             <nav class="space-y-1">
-                <!-- Data Guru -->
-                <a href="{{ route('teachers.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('teachers.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                <!-- Direktori Data Pegawai & Guru -->
+                <a href="{{ route('employees.index') }}"
+                    class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('employees.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="graduation-cap" class="menu-icon w-4 h-4 shrink-0"></i>
-                        <span class="menu-text">Data Guru</span>
+                        <i data-lucide="users-2" class="menu-icon w-4 h-4 shrink-0"></i>
+                        <span class="menu-text">Data Pegawai & Guru</span>
                     </div>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Data Guru
+                        Direktori Pegawai & Guru
                     </span>
                 </a>
 
-                <!-- Wali & Guru Rombel -->
-                <a href="{{ route('homeroom-assignments.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('homeroom-assignments.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                <!-- Riwayat Izin & Cuti Pegawai -->
+                <a href="{{ route('leaves.index') }}"
+                    class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('leaves.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="user-check" class="menu-icon w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0"></i>
-                        <span class="menu-text">Wali &amp; Guru Rombel</span>
+                        <i data-lucide="file-signature" class="menu-icon w-4 h-4 shrink-0"></i>
+                        <span class="menu-text">Riwayat Izin & Cuti</span>
                     </div>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Wali &amp; Guru Rombel
+                        Riwayat Izin & Cuti Pegawai
+                    </span>
+                </a>
+
+                <!-- Kelola Jadwal Piket -->
+                <a href="{{ route('picket-schedules.admin') }}"
+                    class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('picket-schedules.admin') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="calendar-days" class="menu-icon w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0"></i>
+                        <span class="menu-text">Kelola Jadwal Piket</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Kelola Jadwal Piket Sekolah
                     </span>
                 </a>
 
                 <!-- Berkas Guru -->
                 <a href="{{ route('teacher-documents.index') }}" class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('teacher-documents.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="folder-archive" class="menu-icon w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0"></i>
+                        <i data-lucide="folder-archive" class="menu-icon w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0"></i>
                         <span class="menu-text">Berkas Guru</span>
                     </div>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Berkas Guru
+                        Berkas Guru & Portofolio
                     </span>
                 </a>
 
-                <!-- Dropdown: Kepegawaian & HRD -->
-                <div x-data="{ openHrd: {{ Request::routeIs('employees.*', 'leaves.*', 'leave-types.*', 'picket-schedules.admin', 'employee-types.*') ? 'true' : 'false' }} }">
-                    <button @click="openHrd = !openHrd"
-                        class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer {{ Request::routeIs('employees.*', 'leaves.*', 'leave-types.*', 'picket-schedules.admin', 'employee-types.*') ? 'text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800 font-medium' : '' }}">
+                <!-- Dropdown: Master Tipe SDM -->
+                <div x-data="{ openTypeSdm: {{ Request::routeIs('employee-types.*', 'leave-types.*', 'teachers.*') ? 'true' : 'false' }} }">
+                    <button @click="openTypeSdm = !openTypeSdm"
+                        class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer {{ Request::routeIs('employee-types.*', 'leave-types.*', 'teachers.*') ? 'text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800 font-medium' : '' }}">
                         <div class="flex items-center gap-3">
-                            <i data-lucide="users-2" class="menu-icon w-4 h-4 shrink-0"></i>
-                            <span class="menu-text">Kepegawaian & HRD</span>
+                            <i data-lucide="tag" class="menu-icon w-4 h-4 shrink-0"></i>
+                            <span class="menu-text">Master Tipe SDM</span>
                         </div>
                         <i data-lucide="chevron-right" class="chevron-icon w-3.5 h-3.5 transition-transform duration-200"
-                            :style="openHrd ? 'transform: rotate(90deg);' : ''"></i>
+                            :style="openTypeSdm ? 'transform: rotate(90deg);' : ''"></i>
                         <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                            Kepegawaian & HRD
+                            Master Tipe Pegawai & Izin
                         </span>
                     </button>
 
-                    <!-- Dropdown content with line connector -->
-                    <div x-show="openHrd" x-collapse
+                    <div x-show="openTypeSdm" x-collapse
                         class="sidebar-dropdown-content mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1">
-                        <!-- Data Pegawai -->
-                        <a href="{{ route('employees.index') }}"
-                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('employees.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Data Pegawai</span>
+                        <a href="{{ route('teachers.index') }}"
+                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('teachers.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <span>Kualifikasi Guru</span>
                         </a>
-
-                        <!-- Riwayat Izin & Cuti -->
-                        <a href="{{ route('leaves.index') }}"
-                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('leaves.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Riwayat Izin & Cuti</span>
-                        </a>
-
-                        <!-- Kelola Piket -->
-                        <a href="{{ route('picket-schedules.admin') }}"
-                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('picket-schedules.admin') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Kelola Piket</span>
-                        </a>
-
-                        <!-- Tipe Pegawai -->
                         <a href="{{ route('employee-types.index') }}"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('employee-types.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
                             <span>Tipe Pegawai</span>
                         </a>
-
-                        <!-- Tipe Izin -->
                         <a href="{{ route('leave-types.index') }}"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('leave-types.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Tipe Izin</span>
+                            <span>Tipe Izin & Cuti</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Dropdown: Rekap Finansial Kehadiran -->
+                <div x-data="{ openFinansial: {{ Request::routeIs('bonus-reports.*', 'attendance-percentage-reports.*') ? 'true' : 'false' }} }">
+                    <button @click="openFinansial = !openFinansial"
+                        class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer {{ Request::routeIs('bonus-reports.*', 'attendance-percentage-reports.*') ? 'text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800 font-medium' : '' }}">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="badge-dollar-sign" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
+                            <span class="menu-text">Rekap Finansial SDM</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="chevron-icon w-3.5 h-3.5 transition-transform duration-200"
+                            :style="openFinansial ? 'transform: rotate(90deg);' : ''"></i>
+                        <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                            Rekap Uang & Persentase Kehadiran
+                        </span>
+                    </button>
+
+                    <div x-show="openFinansial" x-collapse
+                        class="sidebar-dropdown-content mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1">
+                        <a href="{{ route('bonus-reports.index') }}"
+                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('bonus-reports.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <span>Uang Kehadiran</span>
+                        </a>
+                        <a href="{{ route('attendance-percentage-reports.index') }}"
+                            class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('attendance-percentage-reports.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
+                            <span>Persentase Kehadiran</span>
                         </a>
                     </div>
                 </div>
             </nav>
         </div>
-        @endif
 
-        <!-- Group 4: Pusat Data & Pengaturan -->
-        @if($isAdmin)
+        <!-- ==========================================
+             4. LAYANAN UMUM & OPERASIONAL
+             ========================================== -->
         <div>
             <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                Pusat Data & Pengaturan
+                Layanan Operasional
             </h3>
             <nav class="space-y-1">
                 <!-- Buku Tamu -->
@@ -480,12 +461,33 @@
                         <span class="menu-text">Buku Tamu</span>
                     </div>
                     <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                        Buku Tamu
+                        Buku Tamu Sekolah
                     </span>
                 </a>
 
-                @if($isSuperAdmin)
-                <!-- Dropdown: Pengaturan Sistem -->
+                <!-- Papan Pengumuman -->
+                <a href="{{ route('announcements.index') }}"
+                    class="menu-item flex items-center justify-between gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('announcements.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="bell" class="menu-icon w-4 h-4 text-amber-500 shrink-0"></i>
+                        <span class="menu-text">Pengumuman</span>
+                    </div>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Pengumuman Internal
+                    </span>
+                </a>
+            </nav>
+        </div>
+
+        @if($isSuperAdmin)
+        <!-- ==========================================
+             5. PENGATURAN SISTEM (Super Admin)
+             ========================================== -->
+        <div>
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Pengaturan Sistem
+            </h3>
+            <nav class="space-y-1">
                 <div x-data="{ openSystem: {{ Request::routeIs('users.*', 'system-logs.*', 'settings') ? 'true' : 'false' }} }">
                     <button @click="openSystem = !openSystem"
                         class="menu-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors text-xs font-medium relative group cursor-pointer {{ Request::routeIs('users.*', 'system-logs.*', 'settings') ? 'text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800 font-medium' : '' }}">
@@ -496,16 +498,15 @@
                         <i data-lucide="chevron-right" class="chevron-icon w-3.5 h-3.5 transition-transform duration-200"
                             :style="openSystem ? 'transform: rotate(90deg);' : ''"></i>
                         <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
-                            Pengaturan Sistem
+                            Pengaturan Sistem & Hak Akses
                         </span>
                     </button>
 
-                    <!-- Dropdown content with line connector -->
                     <div x-show="openSystem" x-collapse
                         class="sidebar-dropdown-content mt-1 ml-5 pl-4 border-l border-slate-200 dark:border-slate-800 space-y-1">
                         <a href="{{ route('users.index') }}"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('users.*') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
-                            <span>Setting User</span>
+                            <span>Setting User & Akses</span>
                         </a>
                         <a href="{{ route('settings') }}"
                             class="flex items-center justify-between gap-2 py-1 text-xs font-medium {{ Request::routeIs('settings') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }} transition-colors">
@@ -517,10 +518,71 @@
                         </a>
                     </div>
                 </div>
-                @endif
             </nav>
         </div>
         @endif
+        @endif
+
+        <!-- ==========================================
+             PORTAL PRIBADI SAYA (Akses Mandiri Pegawai)
+             ========================================== -->
+        <div>
+            <h3 class="school-info px-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                Portal Mandiri Saya
+            </h3>
+            <nav class="space-y-1">
+                <!-- Kehadiran Saya -->
+                <a href="{{ route('attendances.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('attendances.index') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <i data-lucide="scan-face" class="menu-icon w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
+                    <span class="menu-text">Presensi Mandiri</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Presensi Mandiri
+                    </span>
+                </a>
+
+                <!-- Pengajuan Izin Saya -->
+                @if($empId)
+                <a href="{{ route('my-leaves.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('my-leaves.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <i data-lucide="file-signature" class="menu-icon w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0"></i>
+                    <span class="menu-text">Pengajuan Izin Saya</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Pengajuan Izin & Cuti Saya
+                    </span>
+                </a>
+                @endif
+
+                <!-- Slip Gaji Saya -->
+                <a href="{{ route('payslips.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('payslips.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <i data-lucide="file-text" class="menu-icon w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0"></i>
+                    <span class="menu-text">Slip Gaji</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Slip Gaji Saya
+                    </span>
+                </a>
+
+                <!-- Jadwal Piket Saya -->
+                @if($showPicketMenu)
+                <a href="{{ route('picket-schedules.index') }}" class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('picket-schedules.index') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} text-xs relative group">
+                    <i data-lucide="calendar-days" class="menu-icon w-4 h-4 text-amber-500 shrink-0"></i>
+                    <span class="menu-text">Jadwal Piket Saya</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Jadwal Piket Saya
+                    </span>
+                </a>
+                @endif
+
+                @if(!$isAdmin)
+                <a href="{{ route('announcements.index') }}"
+                    class="menu-item flex items-center gap-3 px-3 py-2 rounded-lg {{ Request::routeIs('announcements.*') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50' }} transition-colors text-xs relative group">
+                    <i data-lucide="bell" class="menu-icon w-4 h-4 text-amber-500 shrink-0"></i>
+                    <span class="menu-text">Pengumuman</span>
+                    <span class="sidebar-tooltip absolute left-full ml-3 px-2 py-1 bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-50 dark:text-slate-100 text-xs font-semibold rounded-md shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all origin-left duration-100 pointer-events-none whitespace-nowrap z-50">
+                        Pengumuman
+                    </span>
+                </a>
+                @endif
+            </nav>
+        </div>
     </div>
 
     <!-- Bottom User Account Profile Menu (dropdown lookalike at bottom of sidebar-07) -->

@@ -281,15 +281,6 @@
                         <i data-lucide="list-ordered" class="w-4 h-4 text-indigo-600"></i>
                         Daftar Tingkat & Jenjang Kelas
                     </h3>
-                    @php
-                        $currentSelectedYear = $academicYears->firstWhere('id', $selectedYearId) ?? ($academicYears->firstWhere('has_active', true) ?? $academicYears->first());
-                    @endphp
-                    @if($currentSelectedYear)
-                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $currentSelectedYear->has_active || $currentSelectedYear->is_active ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700' }}">
-                            <i data-lucide="calendar" class="w-3 h-3"></i>
-                            TA {{ $currentSelectedYear->name }} {{ ($currentSelectedYear->has_active || $currentSelectedYear->is_active) ? '(Aktif)' : '' }}
-                        </span>
-                    @endif
                 </div>
 
                 <!-- Filter Tahun Ajaran -->

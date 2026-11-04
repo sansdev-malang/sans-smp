@@ -79,6 +79,10 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
     Route::get('alumni/{id}/print', [\App\Http\Controllers\AlumniController::class, 'print'])->name('alumni.print');
     Route::put('alumni/{id}', [\App\Http\Controllers\AlumniController::class, 'update'])->name('alumni.update');
 
+    // Master Mata Pelajaran (Subjects)
+    Route::post('subjects/{id}/toggle-status', [\App\Http\Controllers\SubjectController::class, 'toggleStatus'])->name('subjects.toggle-status');
+    Route::resource('subjects', \App\Http\Controllers\SubjectController::class);
+
     // Penugasan Pendidik & Wali Kelas (Homeroom & Staff Assignments)
     Route::post('homeroom-assignments/{id}/toggle-status', [\App\Http\Controllers\HomeroomAssignmentController::class, 'toggleStatus'])->name('homeroom-assignments.toggle-status');
     Route::match(['post', 'put', 'patch'], 'homeroom-assignments/{id}', [\App\Http\Controllers\HomeroomAssignmentController::class, 'update'])->name('homeroom-assignments.update-custom');

@@ -526,6 +526,13 @@
                 });
             </script>
         @endif
+        @if($errors->any())
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    showToast('Gagal Validasi!', @json(implode(' ', $errors->all())), 'error');
+                });
+            </script>
+        @endif
         @if(session('info'))
             <script>
                 document.addEventListener('DOMContentLoaded', () => {

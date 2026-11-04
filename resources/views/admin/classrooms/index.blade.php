@@ -389,15 +389,6 @@
                         <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i>
                         Daftar Rombongan Belajar (Rombel)
                     </h3>
-                    @if($selectedYear)
-                        @php
-                            $isCurrentYearActive = $academicYears->where('name', $selectedYear->name)->contains('is_active', true);
-                        @endphp
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $isCurrentYearActive ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700' }}">
-                            <i data-lucide="calendar" class="w-3 h-3"></i>
-                            {{ $selectedYear->name }} {{ $isCurrentYearActive ? '(Aktif)' : '' }}
-                        </span>
-                    @endif
                 </div>
                 <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
                     Total: <strong class="text-slate-800 dark:text-slate-200">{{ $classrooms->count() }}</strong> rombel
@@ -429,7 +420,7 @@
                                     {{ $index + 1 }}
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                    <span class="font-medium text-slate-700 dark:text-slate-300 text-xs">
                                         {{ $c->classLevel->name ?? '-' }}
                                     </span>
                                 </td>
@@ -439,9 +430,8 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-indigo-50/70 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800 whitespace-nowrap">
-                                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
-                                        <span>{{ $c->academicYear->name ?? '-' }}</span>
+                                    <span class="font-mono text-xs font-medium text-slate-700 dark:text-slate-300">
+                                        {{ $c->academicYear->name ?? '-' }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3">

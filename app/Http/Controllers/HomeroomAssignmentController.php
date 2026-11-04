@@ -8,6 +8,7 @@ use App\Models\Classroom;
 use App\Models\Employee;
 use App\Models\EmployeeType;
 use App\Models\HomeroomAssignment;
+use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,6 +28,7 @@ class HomeroomAssignmentController extends Controller
 
         $classLevels = ClassLevel::orderBy('order')->get();
         $selectedClassLevelId = $request->get('class_level_id', 'all');
+        $selectedSubjectId = $request->get('subject_id', 'all');
         $selectedRole = $request->get('role', 'all');
         $selectedStatus = $request->get('status', 'all');
         $search = $request->get('search');
@@ -39,6 +41,7 @@ class HomeroomAssignmentController extends Controller
                     $sq->where('status', 'aktif');
                 }]);
             },
+            'subject',
             'teacher.user'
         ]);
 
@@ -53,6 +56,10 @@ class HomeroomAssignmentController extends Controller
                       $cq->where('class_level_id', $selectedClassLevelId);
                   });
             });
+        }
+
+        if ($selectedSubjectId && $selectedSubjectId !== 'all') {
+            $query->where('subject_id', $selectedSubjectId);
         }
 
         if ($selectedRole && $selectedRole !== 'all') {
@@ -74,6 +81,9 @@ class HomeroomAssignmentController extends Controller
                 })->orWhereHas('classroom', function ($cq) use ($search) {
                     $cq->where('name', 'like', "%{$search}%")
                        ->orWhere('code', 'like', "%{$search}%");
+                })->orWhereHas('subject', function ($sq) use ($search) {
+                    $sq->where('name', 'like', "%{$search}%")
+                       ->orWhere('code', 'like', "%{$search}%");
                 })->orWhere('subject', 'like', "%{$search}%");
             });
         }
@@ -92,6 +102,7 @@ class HomeroomAssignmentController extends Controller
             ->withQueryString();
 
         $classrooms = Classroom::with('classLevel')->where('is_active', true)->orderBy('code')->orderBy('name')->get();
+        $subjects = Subject::active()->orderBy('order')->get();
 
         // Teachers (Active employees)
         $teachers = Employee::whereIn('status', ['Active', 'aktif', 'active', 'Aktif'])
@@ -113,10 +124,12 @@ class HomeroomAssignmentController extends Controller
             'activeAcademicYear',
             'selectedYearId',
             'selectedClassLevelId',
+            'selectedSubjectId',
             'selectedRole',
             'selectedStatus',
             'classLevels',
             'classrooms',
+            'subjects',
             'teachers',
             'stats',
             'search',
@@ -129,12 +142,27 @@ class HomeroomAssignmentController extends Controller
      */
     public function store(Request $request)
     {
+        // Sanitize nullable fields
+        foreach (['class_level_id', 'classroom_id', 'subject_id', 'semester', 'notes', 'subject'] as $field) {
+            if ($request->has($field) && ($request->input($field) === '' || ($field === 'classroom_id' && $request->input($field) === 'all'))) {
+                $request->merge([$field => null]);
+            }
+        }
+        if ($request->has('is_active')) {
+            $val = $request->input('is_active');
+            $request->merge([
+                'is_active' => ($val === '1' || $val === 1 || $val === true || $val === 'true' || $val === 'Aktif') ? 1 : 0
+            ]);
+        }
+
         $validated = $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
             'classroom_id' => 'required|exists:classrooms,id',
+            'subject_id' => 'nullable|exists:subjects,id',
             'employee_id' => 'required|exists:employees,id',
             'role' => 'required|in:wali_kelas,guru_mapel,gpk,gpq',
             'subject' => 'nullable|string|max:100',
+            'semester' => 'nullable|string|in:all,ganjil,genap',
             'is_active' => 'required|boolean',
             'notes' => 'nullable|string|max:500',
         ]);
@@ -142,20 +170,36 @@ class HomeroomAssignmentController extends Controller
         $classroom = Classroom::findOrFail($validated['classroom_id']);
         $validated['class_level_id'] = $classroom->class_level_id;
 
+        // Auto-link GPQ subject if role is gpq and subject_id not specified
+        if ($validated['role'] === 'gpq' && empty($validated['subject_id'])) {
+            $gpqSub = Subject::where('code', 'GPQ')->first();
+            if ($gpqSub) {
+                $validated['subject_id'] = $gpqSub->id;
+                $validated['subject'] = $gpqSub->name;
+            }
+        }
+
+        // Auto fill subject name if subject_id provided
+        if (!empty($validated['subject_id']) && empty($validated['subject'])) {
+            $validated['subject'] = Subject::find($validated['subject_id'])?->name;
+        }
+
         // Check if duplicate assignment exists
         $existing = HomeroomAssignment::where('academic_year_id', $validated['academic_year_id'])
             ->where('classroom_id', $validated['classroom_id'])
             ->where('employee_id', $validated['employee_id'])
             ->where('role', $validated['role'])
-            ->when($validated['role'] === 'guru_mapel' && !empty($validated['subject']), function($q) use ($validated) {
-                $q->where('subject', $validated['subject']);
+            ->when($validated['role'] === 'guru_mapel' && !empty($validated['subject_id']), function($q) use ($validated) {
+                $q->where('subject_id', $validated['subject_id']);
             })
             ->first();
 
         if ($existing) {
             $existing->update([
                 'class_level_id' => $validated['class_level_id'],
-                'subject' => $validated['subject'],
+                'subject_id' => $validated['subject_id'] ?? null,
+                'subject' => $validated['subject'] ?? null,
+                'semester' => $validated['semester'] ?? 'all',
                 'is_active' => $validated['is_active'],
                 'notes' => $validated['notes'],
             ]);
@@ -189,18 +233,46 @@ class HomeroomAssignmentController extends Controller
     {
         $assignment = HomeroomAssignment::findOrFail($id);
 
+        // Sanitize nullable fields
+        foreach (['class_level_id', 'classroom_id', 'subject_id', 'semester', 'notes', 'subject'] as $field) {
+            if ($request->has($field) && ($request->input($field) === '' || ($field === 'classroom_id' && $request->input($field) === 'all'))) {
+                $request->merge([$field => null]);
+            }
+        }
+        if ($request->has('is_active')) {
+            $val = $request->input('is_active');
+            $request->merge([
+                'is_active' => ($val === '1' || $val === 1 || $val === true || $val === 'true' || $val === 'Aktif') ? 1 : 0
+            ]);
+        }
+
         $validated = $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
             'classroom_id' => 'required|exists:classrooms,id',
+            'subject_id' => 'nullable|exists:subjects,id',
             'employee_id' => 'required|exists:employees,id',
             'role' => 'required|in:wali_kelas,guru_mapel,gpk,gpq',
             'subject' => 'nullable|string|max:100',
+            'semester' => 'nullable|string|in:all,ganjil,genap',
             'is_active' => 'required|boolean',
             'notes' => 'nullable|string|max:500',
         ]);
 
         $classroom = Classroom::findOrFail($validated['classroom_id']);
         $validated['class_level_id'] = $classroom->class_level_id;
+
+        // Auto-link GPQ subject if role is gpq and subject_id not specified
+        if ($validated['role'] === 'gpq' && empty($validated['subject_id'])) {
+            $gpqSub = Subject::where('code', 'GPQ')->first();
+            if ($gpqSub) {
+                $validated['subject_id'] = $gpqSub->id;
+                $validated['subject'] = $gpqSub->name;
+            }
+        }
+
+        if (!empty($validated['subject_id']) && empty($validated['subject'])) {
+            $validated['subject'] = Subject::find($validated['subject_id'])?->name;
+        }
 
         $assignment->update($validated);
 
