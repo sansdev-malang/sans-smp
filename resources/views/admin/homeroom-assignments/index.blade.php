@@ -163,22 +163,30 @@
                     @endif
                 </div>
 
-                <!-- Right: Search Bar -->
-                <div x-data="{ searchVal: '{{ request('search') }}' }" class="w-full sm:w-72 md:w-80 flex items-center search-container bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500">
-                    <span class="pl-3 text-slate-400">
-                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                <!-- Right: Search Bar (Live Search) -->
+                <div x-data="liveSearchBox('assignments-table-container', '{{ request('search') }}')" class="relative w-full sm:w-72 md:w-80">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg x-show="isSearching" x-cloak class="animate-spin w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <svg x-show="!isSearching" class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.3-4.3"></path>
+                        </svg>
                     </span>
-                    <input type="text" name="search" x-model="searchVal" placeholder="Cari nama guru, rombel, mapel, NUPTK..."
-                        style="border: none !important; outline: none !important; box-shadow: none !important;"
-                        class="w-full h-9 px-2.5 text-xs bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-0">
-                    
-                    <button type="button" x-show="searchVal.trim() !== ''" @click="searchVal = ''; $el.closest('.search-container').querySelector('input').focus();" class="h-9 px-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer bg-transparent border-0 flex items-center justify-center" title="Bersihkan pencarian">
-                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                    </button>
 
-                    <button type="submit" 
-                        class="h-9 px-3.5 font-semibold text-xs bg-slate-100 dark:bg-slate-700/60 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center border-l border-slate-200 dark:border-slate-700/80">
-                        Cari
+                    <input type="text" name="search" x-model="searchVal" @input="onInput()" @keydown.enter.prevent="performSearch()" placeholder="Cari nama guru, rombel, mapel, NUPTK..."
+                        style="padding-left: 2.25rem;"
+                        class="w-full h-9 pr-8 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-inner">
+
+                    <button type="button" x-show="searchVal && searchVal.trim() !== ''" @click="clear()"
+                        class="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer bg-transparent border-0"
+                        title="Bersihkan pencarian">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6 6 18"></path>
+                            <path d="m6 6 12 12"></path>
+                        </svg>
                     </button>
                 </div>
 
@@ -186,7 +194,7 @@
         </section>
 
         <!-- TABLE PENUGASAN -->
-        <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden w-full">
+        <section id="assignments-table-container" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden w-full">
             <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
                 <h3 class="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                     <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
