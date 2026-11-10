@@ -282,8 +282,34 @@
         </script>
 
         <style>
+            /* Responsive Root Typography & UI Density System */
+            html, body {
+                height: 100%;
+                overflow: hidden;
+            }
             html {
+                font-size: 15px;
                 -webkit-text-size-adjust: 100%;
+            }
+            @media (min-width: 1024px) and (max-width: 1366px) {
+                html {
+                    font-size: 14.5px;
+                }
+            }
+            @media (min-width: 1367px) and (max-width: 1599px) {
+                html {
+                    font-size: 15px;
+                }
+            }
+            @media (min-width: 1600px) and (max-width: 1920px) {
+                html {
+                    font-size: 16px;
+                }
+            }
+            @media (min-width: 1921px) {
+                html {
+                    font-size: 16.5px;
+                }
             }
 
             body {
@@ -405,8 +431,8 @@
             }
         </style>
     </head>
-    <body class="h-full bg-slate-50 dark:bg-[#09090b] text-[#09090b] dark:text-slate-50 antialiased overflow-x-hidden transition-colors duration-200">
-        <div class="flex h-screen overflow-hidden">
+    <body class="h-full bg-slate-50 dark:bg-[#09090b] text-[#09090b] dark:text-slate-50 antialiased overflow-hidden transition-colors duration-200">
+        <div class="flex h-full w-full overflow-hidden">
 
             <!-- SIDEBAR BACKDROP FOR MOBILE -->
             <div id="sidebar-backdrop" class="fixed inset-0 z-[55] bg-slate-950/55 backdrop-blur-sm hidden md:hidden transition-opacity duration-200 opacity-0"></div>
@@ -415,7 +441,7 @@
             @include('partials.admin.sidebar')
 
             <!-- MAIN LAYOUT -->
-            <main class="flex-1 flex flex-col overflow-y-auto">
+            <main id="main-content" class="flex-1 flex flex-col overflow-y-auto">
                 @if(session()->has('impersonator_id'))
                     <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold shadow-md z-40 sticky top-0 shrink-0 border-b border-amber-600/30">
                         <div class="flex items-center gap-2.5">
