@@ -418,7 +418,7 @@ class StudentReportController extends Controller
      */
     private function getStaffMatrixReport(array $matchingYearIds = []): array
     {
-        $query = HomeroomAssignment::with(['employee', 'subject'])
+        $query = HomeroomAssignment::with('employee')
             ->where('is_active', true);
 
         if (!empty($matchingYearIds)) {
@@ -445,8 +445,7 @@ class StudentReportController extends Controller
             if ($as->role === 'wali_kelas') {
                 $matrix[$crId]['homeroom'] = $empName;
             } elseif ($as->role === 'guru_mapel') {
-                $subjName = is_object($as->subject) ? $as->subject->name : ($as->subject ?: 'Mapel');
-                $matrix[$crId]['guru_mapel'][] = "{$subjName}: {$empName}";
+                $matrix[$crId]['guru_mapel'][] = "Guru Mapel: {$empName}";
             } elseif ($as->role === 'gpk') {
                 $matrix[$crId]['gpk'][] = $empName;
             } elseif ($as->role === 'gpq') {

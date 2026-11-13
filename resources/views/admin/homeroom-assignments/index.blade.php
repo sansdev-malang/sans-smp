@@ -259,15 +259,9 @@
                                                 <i data-lucide="book-open" class="w-3 h-3 text-teal-600"></i>
                                                 Guru Mapel
                                             </span>
-                                            @php
-                                                $subjDisplay = is_object($a->subject) ? $a->subject->name : ($a->subject ?: '-');
-                                            @endphp
-                                            @if($subjDisplay && $subjDisplay !== '-')
+                                            @if($a->semester && $a->semester !== 'all')
                                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                                    {{ $subjDisplay }}
-                                                    @if($a->semester && $a->semester !== 'all')
-                                                        <span class="text-[9px] text-slate-400 capitalize">({{ $a->semester }})</span>
-                                                    @endif
+                                                    <span class="text-[9px] text-slate-400 capitalize">Semester: {{ ucfirst($a->semester) }}</span>
                                                 </span>
                                             @endif
                                         </div>
@@ -422,21 +416,9 @@
                                 </select>
                             </div>
 
-                            <!-- 4. Mata Pelajaran & Semester (Khusus Guru Mapel & GPQ) -->
+                            <!-- 4. Semester (Khusus Guru Mapel & GPQ) -->
                             <div x-show="formData.role === 'guru_mapel' || formData.role === 'gpq'" x-cloak
                                 class="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-xl space-y-3">
-                                <div>
-                                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                        Mata Pelajaran <span class="text-rose-500" x-show="formData.role === 'guru_mapel'">*</span>
-                                    </label>
-                                    <select x-model="formData.subject_id"
-                                        class="w-full h-9 px-3 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-slate-50">
-                                        <option value="">-- Pilih Mata Pelajaran --</option>
-                                        @foreach($subjects as $sub)
-                                            <option value="{{ $sub->id }}">{{ $sub->code }} - {{ $sub->name }} ({{ $sub->group }})</option>
-                                        @endforeach
-                                    </select>
-                                </div>
                                 <div>
                                     <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Semester Berlaku</label>
                                     <select x-model="formData.semester"
@@ -544,10 +526,8 @@
                     id: null,
                     academic_year_id: '{{ $selectedYearId }}',
                     classroom_id: '',
-                    subject_id: '',
                     employee_id: '',
                     role: 'wali_kelas',
-                    subject: '',
                     semester: 'all',
                     is_active: true,
                     notes: '',
@@ -559,10 +539,8 @@
                         id: null,
                         academic_year_id: '{{ $selectedYearId }}',
                         classroom_id: '',
-                        subject_id: '',
                         employee_id: '',
                         role: 'wali_kelas',
-                        subject: '',
                         semester: 'all',
                         is_active: true,
                         notes: '',
@@ -577,10 +555,8 @@
                         id: data.id,
                         academic_year_id: data.academic_year_id,
                         classroom_id: data.classroom_id,
-                        subject_id: data.subject_id || '',
                         employee_id: data.employee_id,
                         role: data.role || 'wali_kelas',
-                        subject: data.subject || '',
                         semester: data.semester || 'all',
                         is_active: !!data.is_active,
                         notes: data.notes || '',

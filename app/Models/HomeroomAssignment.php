@@ -16,10 +16,8 @@ class HomeroomAssignment extends Model
         'academic_year_id',
         'class_level_id',
         'classroom_id',
-        'subject_id',
         'employee_id',
         'role', // wali_kelas, guru_mapel, gpk, gpq
-        'subject',
         'semester', // all, ganjil, genap
         'is_active',
         'notes',
@@ -54,20 +52,14 @@ class HomeroomAssignment extends Model
         return $this->belongsTo(Employee::class, 'employee_id');
     }
 
-    public function subject(): BelongsTo
-    {
-        return $this->belongsTo(Subject::class, 'subject_id');
-    }
-
     /**
      * Role label.
      */
     public function getRoleLabelAttribute(): string
     {
-        $subjectName = $this->subject?->name ?? $this->subject;
         return match ($this->role) {
             'wali_kelas' => 'Wali Kelas',
-            'guru_mapel' => 'Guru Mapel' . ($subjectName ? " ({$subjectName})" : ''),
+            'guru_mapel' => 'Guru Mapel',
             'gpk' => 'Guru Pendamping Khusus (GPK)',
             'gpq' => "Guru Pendamping Al-Qur'an (GPQ)",
             default => ucfirst(str_replace('_', ' ', $this->role ?? 'Wali Kelas')),
