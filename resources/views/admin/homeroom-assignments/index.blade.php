@@ -331,18 +331,7 @@
                                 <!-- 7. Aksi -->
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">
-                                        <button type="button" @click='openEditModal(@json([
-                                            "id" => $a->id,
-                                            "academic_year_id" => $a->academic_year_id,
-                                            "class_level_id" => $a->class_level_id,
-                                            "classroom_id" => $a->classroom_id,
-                                            "subject_id" => $a->subject_id,
-                                            "employee_id" => $a->employee_id,
-                                            "role" => $a->role,
-                                            "subject" => $a->subject,
-                                            "is_active" => (bool)$a->is_active,
-                                            "notes" => $a->notes,
-                                        ]))'
+                                        <button type="button" @click='openEditModal(@json($a))'
                                             class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
                                             title="Edit Penugasan">
                                             <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
