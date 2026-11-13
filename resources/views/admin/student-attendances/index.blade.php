@@ -13,9 +13,9 @@
         <!-- HEADER SECTION -->
         <section class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 w-full text-left">
             <div class="flex flex-col gap-0.5">
-                <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">Presensi Siswa</h2>
+                <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">Absensi Siswa</h2>
                 <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                    Pencatatan presensi harian per rombel dan laporan rekapitulasi kehadiran bulanan siswa SMP.
+                    Pencatatan absensi harian per rombel dan laporan rekapitulasi kehadiran bulanan siswa SMP.
                 </p>
             </div>
 
