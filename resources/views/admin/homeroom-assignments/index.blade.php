@@ -15,6 +15,16 @@
                     <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
                     Data Guru
                 </a>
+                <form action="{{ route('homeroom-assignments.sync-classrooms') }}" method="POST" class="inline" onsubmit="return confirm('Sinkronkan penugasan wali kelas secara otomatis dari data rombel?')">
+                    @csrf
+                    <input type="hidden" name="academic_year_id" value="{{ $selectedYearId }}">
+                    <button type="submit"
+                        class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs transition-colors cursor-pointer"
+                        title="Sinkronkan wali kelas dari rombel">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-slate-500"></i>
+                        Sinkronkan Rombel
+                    </button>
+                </form>
                 <button type="button" @click="openCreateModal()"
                     class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>

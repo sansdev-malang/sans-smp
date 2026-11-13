@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified', 'role:super_admin,admin_sd,admin_paud,adm
     Route::resource('subjects', \App\Http\Controllers\SubjectController::class);
 
     // Penugasan Pendidik & Wali Kelas (Homeroom & Staff Assignments)
+    Route::post('homeroom-assignments/sync-classrooms', [\App\Http\Controllers\HomeroomAssignmentController::class, 'syncFromClassrooms'])->name('homeroom-assignments.sync-classrooms');
     Route::post('homeroom-assignments/{id}/toggle-status', [\App\Http\Controllers\HomeroomAssignmentController::class, 'toggleStatus'])->name('homeroom-assignments.toggle-status');
     Route::match(['post', 'put', 'patch'], 'homeroom-assignments/{id}', [\App\Http\Controllers\HomeroomAssignmentController::class, 'update'])->name('homeroom-assignments.update-custom');
     Route::match(['post', 'delete'], 'homeroom-assignments/{id}/delete', [\App\Http\Controllers\HomeroomAssignmentController::class, 'destroy'])->name('homeroom-assignments.destroy-custom');
