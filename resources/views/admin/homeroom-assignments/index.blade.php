@@ -15,7 +15,7 @@
                     <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
                     Data Guru
                 </a>
-                <form action="{{ route('homeroom-assignments.sync-classrooms') }}" method="POST" class="inline" onsubmit="return confirm('Sinkronkan penugasan wali kelas secara otomatis dari data rombel?')">
+                <form action="{{ route('homeroom-assignments.sync-classrooms') }}" method="POST" class="inline">
                     @csrf
                     <input type="hidden" name="academic_year_id" value="{{ $selectedYearId }}">
                     <button type="submit"
@@ -612,10 +612,18 @@
                         if (json.success) {
                             window.location.reload();
                         } else {
-                            alert(json.message || 'Gagal mengubah status penugasan.');
+                            if (window.showToast) {
+                                window.showToast('Gagal!', json.message || 'Gagal mengubah status penugasan.', 'error');
+                            } else if (window.showToastNotification) {
+                                window.showToastNotification(json.message || 'Gagal mengubah status penugasan.', 'error');
+                            }
                         }
                     } catch (e) {
-                        alert('Terjadi kesalahan koneksi.');
+                        if (window.showToast) {
+                            window.showToast('Error!', 'Terjadi kesalahan koneksi.', 'error');
+                        } else if (window.showToastNotification) {
+                            window.showToastNotification('Terjadi kesalahan koneksi.', 'error');
+                        }
                     }
                 },
 
@@ -640,11 +648,19 @@
                         if (json.success) {
                             window.location.reload();
                         } else {
-                            alert(json.message || 'Gagal menyimpan penugasan.');
+                            if (window.showToast) {
+                                window.showToast('Gagal Validasi!', json.message || 'Gagal menyimpan penugasan.', 'error');
+                            } else if (window.showToastNotification) {
+                                window.showToastNotification(json.message || 'Gagal menyimpan penugasan.', 'error');
+                            }
                             this.saving = false;
                         }
                     } catch (e) {
-                        alert('Terjadi kesalahan koneksi saat menyimpan.');
+                        if (window.showToast) {
+                            window.showToast('Error!', 'Terjadi kesalahan koneksi saat menyimpan.', 'error');
+                        } else if (window.showToastNotification) {
+                            window.showToastNotification('Terjadi kesalahan koneksi saat menyimpan.', 'error');
+                        }
                         this.saving = false;
                     }
                 }
