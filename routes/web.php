@@ -290,9 +290,40 @@ Route::middleware(['auth', 'verified', 'role:super_admin,employee,admin_sd,admin
     Route::post('picket-schedules/swap/{id}/approve-target', [PicketScheduleController::class, 'approveSwapTarget'])->name('picket-schedules.swap.approve-target');
     Route::post('picket-schedules/swap/{id}/reject', [PicketScheduleController::class, 'rejectSwap'])->name('picket-schedules.swap.reject');
 
+    Route::match(['GET', 'POST'], '/notifications/mark-all-read', function () {
+        $user = auth()->user();
+        if ($user) {
+            // 1. Tandai semua database notification sebagai sudah dibaca
+            $user->unreadNotifications->markAsRead();
+
+            // 2. Simpan ID pengajuan cuti yang sudah terbaca ke tabel settings (permanen di DB, tidak hilang saat cache:clear)
+            $recentLeaveIds = \App\Models\LeaveRequest::where('created_at', '>=', now()->subDays(7))->pluck('id')->toArray();
+            $userSettingKey = 'read_leave_ids_' . $user->id;
+            \App\Models\Setting::set($userSettingKey, json_encode($recentLeaveIds));
+            \Illuminate\Support\Facades\Cache::forever($userSettingKey, $recentLeaveIds);
+        }
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+        return redirect()->back();
+    })->name('notifications.mark-all-read');
+
     Route::get('/notifications/{id}/read', function ($id) {
-        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification = auth()->user()->notifications()->find($id);
+        if (!$notification) {
+            return redirect()->back();
+        }
         $notification->markAsRead();
+
+        // Jika notifikasi pengumuman, periksa apakah pengumuman masih ada di database
+        if (str_contains($notification->type, 'NewAnnouncementNotification')) {
+            $annId = $notification->data['id'] ?? null;
+            if (!$annId || !\App\Models\Announcement::where('id', $annId)->exists()) {
+                $notification->delete(); // Hapus notifikasi yatim piatu
+                return redirect()->route('announcements.index')->with('info', 'Pengumuman tersebut telah dihapus.');
+            }
+        }
+
         return redirect($notification->data['url'] ?? url('/dashboard'));
     })->name('notifications.read');
 });
