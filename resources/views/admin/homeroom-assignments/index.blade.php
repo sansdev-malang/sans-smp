@@ -165,7 +165,7 @@
                         </svg>
                     </span>
 
-                    <input type="text" name="search" x-model="searchVal" @input="onInput()" @keydown.enter.prevent="performSearch()" placeholder="Cari nama guru, rombel, mapel, NUPTK..."
+                    <input type="text" name="search" x-model="searchVal" @input="onInput()" @keydown.enter.prevent="performSearch()" placeholder="Cari..."
                         style="padding-left: 2.25rem;"
                         class="w-full h-9 pr-8 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-inner">
 
@@ -198,7 +198,6 @@
                 <table class="w-full text-xs border-collapse">
                     <thead>
                         <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-900/50">
-                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Tahun Ajaran</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Tingkat</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Rombel / Kelas</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Peran</th>
@@ -210,14 +209,6 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
                         @forelse($assignments as $a)
                             <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors group">
-                                
-                                <!-- 1. Tahun Ajaran -->
-                                <td class="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                                    <div class="flex items-center gap-1.5 font-bold">
-                                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-500"></i>
-                                        <span>{{ $a->academicYear?->name ?? '-' }}</span>
-                                    </div>
-                                </td>
 
                                 <!-- 2. Tingkat -->
                                 <td class="px-4 py-3 whitespace-nowrap">
@@ -336,7 +327,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
+                                <td colspan="6" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
                                     <div class="flex flex-col items-center justify-center gap-2">
                                         <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center text-slate-400">
                                             <i data-lucide="users" class="w-6 h-6"></i>
