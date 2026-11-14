@@ -511,7 +511,6 @@
 
     </div>
 
-    @push('scripts')
     <script>
         function homeroomApp() {
             return {
@@ -546,7 +545,9 @@
                         notes: '',
                     };
                     this.modalOpen = true;
-                    this.$nextTick(() => lucide.createIcons());
+                    this.$nextTick(() => {
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    });
                 },
 
                 openEditModal(data) {
@@ -562,7 +563,9 @@
                         notes: data.notes || '',
                     };
                     this.modalOpen = true;
-                    this.$nextTick(() => lucide.createIcons());
+                    this.$nextTick(() => {
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    });
                 },
 
                 confirmDelete(id, teacherName, classroomName) {
@@ -570,7 +573,9 @@
                     this.deleteTeacherName = teacherName;
                     this.deleteClassroomName = classroomName;
                     this.deleteModalOpen = true;
-                    this.$nextTick(() => lucide.createIcons());
+                    this.$nextTick(() => {
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    });
                 },
 
                 async toggleStatus(id, newStatus) {
@@ -642,6 +647,13 @@
                 }
             };
         }
+        window.homeroomApp = homeroomApp;
+        if (window.Alpine) {
+            window.Alpine.data('homeroomApp', homeroomApp);
+        } else {
+            document.addEventListener('alpine:init', () => {
+                window.Alpine.data('homeroomApp', homeroomApp);
+            });
+        }
     </script>
-    @endpush
 </x-admin-layout>
