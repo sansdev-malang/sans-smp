@@ -106,6 +106,10 @@ class User extends Authenticatable
             return true;
         }
 
+        if ($this->isTeacher()) {
+            return true;
+        }
+
         return $this->isActiveHomeroomTeacher();
     }
 
