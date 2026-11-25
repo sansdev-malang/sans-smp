@@ -20,6 +20,7 @@
     }));
     // Integrasi Rapor & CBT
     $canAccessRapor = $isSuperAdmin || $isExecutive || (auth()->user()?->canAccessRapor() ?? false);
+    $canAccessRaporMengaji = $isSuperAdmin || $isExecutive || (auth()->user()?->canAccessRaporMengaji() ?? false);
     $canAccessCbt = auth()->user()?->canAccessCbt();
     $raporLink = route('report-cards.index');
     $cbtLink = route('cbt.launcher');
@@ -87,7 +88,7 @@
                 'academic-years.*', 'semesters.*', 'class-levels.*', 'classrooms.*'
             );
             $isAcademicActive = Request::routeIs(
-                'promotions.*', 'student-reports.*'
+                'promotions.*', 'student-reports.*', 'rekap-rapor-mengaji.*'
             ) || $isMasterAcademicActive;
         @endphp
         <div x-data="{ openAcademic: {{ $isAcademicActive ? 'true' : 'false' }} }">
@@ -128,6 +129,14 @@
                         <span>E-Rapor</span>
                         <i data-lucide="external-link" class="w-3 h-3 text-slate-400 opacity-60 group-hover/link:opacity-100 transition-opacity"></i>
                     </span>
+                </a>
+                @endif
+
+                <!-- 3b. Data Rapor Mengaji -->
+                @if($canAccessRaporMengaji)
+                <a href="{{ route('rekap-rapor-mengaji.index') }}"
+                    class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors {{ Request::routeIs('rekap-rapor-mengaji.*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/40' }}">
+                    <span>Data Rapor Mengaji</span>
                 </a>
                 @endif
 
@@ -378,12 +387,12 @@
             </div>
         </div>
 
-        @elseif($curUser && $curUser->isTeacher())
+        @elseif($curUser && ($curUser->isTeacher() || $canAccessRaporMengaji))
         <!-- ==========================================
              PORTAL PEMBELAJARAN (NON-ADMIN GURU / WALI KELAS)
              ========================================== -->
         @php
-            $isTeacherPortalActive = Request::routeIs('student-attendances.*', 'teacher-documents.*');
+            $isTeacherPortalActive = Request::routeIs('student-attendances.*', 'teacher-documents.*', 'rekap-rapor-mengaji.*');
         @endphp
         <div x-data="{ openTeacherPortal: {{ $isTeacherPortalActive ? 'true' : 'false' }} }">
             <button @click="openTeacherPortal = !openTeacherPortal"
@@ -419,6 +428,14 @@
                         <span>E-Rapor</span>
                         <i data-lucide="external-link" class="w-3 h-3 text-slate-400 opacity-60 group-hover/link:opacity-100 transition-opacity"></i>
                     </span>
+                </a>
+                @endif
+
+                <!-- 3b. Data Rapor Mengaji -->
+                @if($canAccessRaporMengaji)
+                <a href="{{ route('rekap-rapor-mengaji.index') }}"
+                    class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors {{ Request::routeIs('rekap-rapor-mengaji.*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/40' }}">
+                    <span>Data Rapor Mengaji</span>
                 </a>
                 @endif
 
